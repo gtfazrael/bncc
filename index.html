@@ -149,7 +149,7 @@ const sfx = {
 // MEGA BANCO DE QUESTÕES BRASILEIRAS INTERDISCIPLINARES (140 Questões)
 // ==========================================
 const questoes = [
-    // --- D1: Localizar informações explícitas (Ciências, História e Geografia BR) ---
+    // --- D1: Localizar informações explícitas ---
     { p: "[D1] A capital do Brasil, Brasília, foi inaugurada em 1960 pelo presidente Juscelino Kubitschek no Planalto Central. Em que ano a cidade foi inaugurada?", r: "Em 1960.", erradas: ["Em 1500.", "No século XIX.", "Em 1822."] },
     { p: "[D1] O Cerrado é o segundo maior bioma do Brasil e é o lar de animais como o lobo-guará e o tamanduá-bandeira. Qual animal vive no Cerrado segundo o texto?", r: "O lobo-guará.", erradas: ["A onça-pintada.", "O boto-cor-de-rosa.", "O tucano."] },
     { p: "[D1] Em 1822, às margens do rio Ipiranga, Dom Pedro I declarou a independência do Brasil em relação a Portugal. Em que rio a independência foi declarada?", r: "No rio Ipiranga.", erradas: ["No rio Amazonas.", "No rio São Francisco.", "No rio Tietê."] },
@@ -171,7 +171,7 @@ const questoes = [
     { p: "[D1] O boto-cor-de-rosa vive nas águas doces da Bacia Amazônica e faz parte do folclore da região Norte. Onde vive o boto-cor-de-rosa?", r: "Nas águas doces da Bacia Amazônica.", erradas: ["Nas praias do Nordeste.", "Nos rios do Sul do Brasil.", "Em lagos artificiais."] },
     { p: "[D1] O ciclo da água na natureza garante a formação de chuvas, que abastecem os reservatórios das hidrelétricas do Brasil. O que as chuvas abastecem?", r: "Os reservatórios das hidrelétricas.", erradas: ["Os oceanos do interior.", "Apenas as pequenas plantações.", "As ruas das cidades."] },
 
-    // --- D3: Inferir o sentido de uma palavra ou expressão no contexto ---
+    // --- D3: Inferir o sentido de uma palavra ou expressão ---
     { p: "[D3] O bandeirante foi *intrépido* ao desbravar as densas matas do Brasil colonial sem medo dos perigos. 'Intrépido' significa:", r: "Corajoso e destemido.", erradas: ["Assustado e tímido.", "Cansado e lento.", "Curioso e falante."] },
     { p: "[D3] A seca severa no Nordeste deixou o solo *árido*, dificultando o plantio de milho e feijão. A palavra 'árido' indica:", r: "Seco, sem umidade e estéril.", erradas: ["Frio e congelado.", "Muito chuvoso e alagado.", "Verde e fértil."] },
     { p: "[D3] A construção da usina hidrelétrica de Itaipu foi uma obra *colossal* que envolveu milhares de trabalhadores. O termo 'colossal' quer dizer:", r: "Gigantesca, imensa.", erradas: ["Pequena, sem importância.", "Rápida, feita num dia.", "Invisível, escondida."] },
@@ -193,7 +193,7 @@ const questoes = [
     { p: "[D3] A água do Ribeirão dos Meninos estava tão *turva* por causa do barro que não dava para ver o fundo. 'Turva' significa:", r: "Suja, sem transparência.", erradas: ["Cristalina, muito limpa.", "Congelada, muito fria.", "Muito salgada."] },
     { p: "[D3] O detetive encontrou na cena do crime uma pista *crucial* que desvendou todo o mistério. 'Crucial' quer dizer:", r: "Decisiva, muito importante.", erradas: ["Desnecessária, inútil.", "Falsa, mentirosa.", "Antiga, ultrapassada."] },
 
-    // --- D4: Inferir uma informação implícita (situações brasileiras) ---
+    // --- D4: Inferir uma informação implícita ---
     { p: "[D4] O menino vestiu camisa xadrez, fez um bigode com lápis de olho, colocou o chapéu de palha e correu para a escola. Para onde ele vai?", r: "Para uma Festa Junina.", erradas: ["Para a praia em Copacabana.", "Para o desfile de Carnaval.", "Para dormir em casa."] },
     { p: "[D4] A terra do sertão rachava sob os pés. O gado estava magro e os açudes não tinham uma gota de água há meses. O que atinge a região?", r: "Uma forte seca (estiagem).", erradas: ["Uma enchente devastadora.", "Um período de neve e frio.", "Um furacão tropical."] },
     { p: "[D4] A mãe encheu a panela de pressão com feijão preto, linguiça, carne-seca e orelha de porco para o almoço de sábado. O que ela vai cozinhar?", r: "Vai preparar uma feijoada.", erradas: ["Vai fazer um bolo de chocolate.", "Vai cozinhar uma moqueca de peixe.", "Vai fazer sopa de legumes."] },
@@ -215,7 +215,7 @@ const questoes = [
     { p: "[D4] Desatou o nó do laço vermelho, rasgou o papel estampado com ursinhos e deu um grito de alegria ao ver a caixa. O que a criança fez?", r: "Abriu um presente de aniversário.", erradas: ["Fechou a mochila da escola.", "Rasgou uma carta que a deixou brava.", "Achou um animal peçonhento na rua."] },
     { p: "[D4] Entrou no carro com listras nas laterais, olhou para a placa luminosa no teto e para o taxímetro marcando o valor e disse 'Para o aeroporto de Guarulhos'. Quem é ele?", r: "Um passageiro de táxi.", erradas: ["O piloto do avião.", "O motorista de ônibus escolar.", "Um guarda de trânsito em patrulha."] },
 
-    // --- D6: Identificar o tema de um texto (30 Questões) ---
+    // --- D6: Identificar o tema de um texto ---
     { p: "[D6] 'O desmatamento na Floresta Amazônica avançou rapidamente. Madeireiros ilegais e queimadas para pasto destroem o habitat de onças, macacos e aves raras.' Qual o tema?", r: "A destruição ambiental na Amazônia.", erradas: ["A exportação de móveis rústicos.", "A riqueza da culinária nortista.", "A lenda do boto-cor-de-rosa."] },
     { p: "[D6] 'O ciclo da água na Terra é constante. O sol aquece os rios, a água evapora, forma nuvens densas e depois cai em formato de chuva, voltando à terra.' Qual o tema?", r: "O processo natural do ciclo da água.", erradas: ["O aquecimento global dos oceanos.", "O tratamento do esgoto nas cidades.", "Como purificar a água barrenta."] },
     { p: "[D6] 'A Proclamação da Independência do Brasil ocorreu em 7 de setembro de 1822. Dom Pedro I, às margens do Ipiranga, rompeu os laços políticos com Portugal.' O tema é:", r: "O evento histórico da Independência do Brasil.", erradas: ["A descoberta do Brasil por Cabral.", "A fundação da cidade de São Paulo.", "As guerras da República Velha."] },
@@ -237,7 +237,7 @@ const questoes = [
     { p: "[D6] 'Dormir de 8 a 9 horas por noite na infância melhora a memória, ajuda no crescimento e evita problemas de humor durante o horário escolar.' O tema é:", r: "A importância e os benefícios do sono para as crianças.", erradas: ["O formato das camas infantis nas lojas.", "O aumento das mensalidades das escolas.", "Sonhos com aventuras e magia na noite."] },
     { p: "[D6] 'O Brasil tem a maior frota de carros flex do mundo. Esse sistema permite que o carro funcione com gasolina ou etanol (feito da cana-de-açúcar).' O tema é:", r: "A tecnologia dos motores flex no Brasil.", erradas: ["Como consertar um pneu furado na rua.", "O processo de plantio do milho doce.", "As leis de limite de velocidade nas estradas."] },
 
-    // --- D11: Distinguir fato de opinião (25 Questões) ---
+    // --- D11: Distinguir fato de opinião ---
     { p: "[D11] 'O filme do Capitão América estreou nos cinemas ontem. Para mim, foi a história de ação mais entediante de todas.' Qual trecho expressa uma OPINIÃO?", r: "Foi a história de ação mais entediante de todas.", erradas: ["O filme estreou nos cinemas ontem.", "O filme é do Capitão América.", "O filme esteve nos cinemas."] },
     { p: "[D11] 'Brasília é a atual capital do Brasil. Sinceramente, acho que a arquitetura da cidade é muito esquisita e fria.' Qual é a OPINIÃO?", r: "Acho que a arquitetura da cidade é muito esquisita.", erradas: ["Brasília é a atual capital do Brasil.", "Brasília é uma cidade.", "O Brasil tem uma capital."] },
     { p: "[D11] 'O pão de queijo leva polvilho azedo na sua massa. Na minha opinião, é o melhor lanche da tarde que existe.' Qual trecho marca o FATO?", r: "O pão de queijo leva polvilho azedo.", erradas: ["É o melhor lanche da tarde que existe.", "Nenhum outro lanche é tão bom.", "O pão de queijo é maravilhoso."] },
@@ -259,7 +259,7 @@ const questoes = [
     { p: "[D11] 'A moqueca capixaba leva azeite de dendê na receita original. Na minha opinião, ela é muito melhor do que a moqueca baiana.' Qual a OPINIÃO?", r: "Na minha opinião, ela é muito melhor do que a baiana.", erradas: ["A moqueca capixaba leva azeite de dendê.", "O prato usa azeite de dendê.", "Existe uma receita de moqueca capixaba."] },
     { p: "[D11] 'O avião partiu do aeroporto com duas horas de atraso. A companhia aérea presta o pior serviço de todo o Brasil.' Qual é o FATO?", r: "O avião partiu do aeroporto com duas horas de atraso.", erradas: ["A companhia aérea presta o pior serviço.", "O atendimento é péssimo.", "As comissárias são mal-educadas."] },
 
-    // --- D13: Finalidade dos textos (25 Questões) ---
+    // --- D13: Finalidade dos textos ---
     { p: "[D13] Um panfleto do posto de saúde com o título 'Dicas para combater o Aedes aegypti', cheio de imagens de pneus sem água, serve principalmente para:", r: "Informar e alertar a população sobre como prevenir a dengue.", erradas: ["Fazer propaganda para vender inseticida.", "Contar a história das doenças em São Paulo.", "Ensinar a fabricar repelentes em casa."] },
     { p: "[D13] Uma receita de 'Bolo de Milho Verde', com a lista de ingredientes e os passos numéricos de como bater no liquidificador, tem como finalidade:", r: "Instruir ou ensinar alguém a preparar um alimento.", erradas: ["Contar uma lenda sobre a origem do milho.", "Convencer o leitor a comprar farinha no mercado.", "Convidar pessoas para uma festa na roça."] },
     { p: "[D13] Um cartão colorido recebido na escola que diz: 'Venha pular fogueira no meu arraiá! Dia 24/06 às 18h no pátio. Traga uma prenda!' tem como objetivo:", r: "Fazer um convite para um evento festivo.", erradas: ["Dar uma notícia triste sobre um incêndio.", "Ensinar a montar uma fogueira segura.", "Exigir o pagamento de uma dívida."] },
@@ -281,7 +281,7 @@ const questoes = [
     { p: "[D13] O dicionário da língua portuguesa da escola, onde procuramos palavras organizadas de A a Z, serve para:", r: "Esclarecer o significado e a escrita correta das palavras.", erradas: ["Contar histórias engraçadas que envolvem as letras.", "Ajudar a somar e a dividir números complexos.", "Criticar a forma como os jovens falam na internet."] },
     { p: "[D13] Uma 'Biografia' escrita sobre a vida de Ayrton Senna, relatando sua infância, as vitórias e os desafios nas corridas, serve para:", r: "Relatar os principais acontecimentos da vida da pessoa.", erradas: ["Apenas vender os carros que Ayrton Senna usava.", "Ensinar os leitores a dirigirem na Fórmula 1.", "Criticar os pilotos de corrida adversários."] },
 
-    // --- D14: Efeito de sentido do uso da pontuação (30 Questões) ---
+    // --- D14: Efeito de sentido do uso da pontuação ---
     { p: "[D14] No trecho: 'Um barulho estranho veio da cozinha escura... passos lentos arrastando-se... e a porta rangeu!' As reticências indicam:", r: "Suspense, mistério ou tensão narrativa.", erradas: ["O fim total e absoluto do capítulo da história.", "Muita alegria e a entrada de palhaços.", "Uma pergunta que aguarda a resposta do leitor."] },
     { p: "[D14] Em 'Não acredito! Nós fomos sorteados para a viagem ao Pantanal?!' A junção da exclamação com a interrogação (!?) revela:", r: "Muita surpresa misturada com um questionamento e dúvida.", erradas: ["Uma afirmação calma, pacífica e sem nenhuma emoção.", "Uma longa pausa para recuperar o fôlego da corrida.", "Tristeza profunda e choro contínuo da personagem."] },
     { p: "[D14] 'PARE DE JOGAR BOLA NA SALA AGORA!', gritou o avô assustando o neto. O uso de letras maiúsculas somado ao ponto de exclamação sugere:", r: "Voz muito alta, um grito forte ou uma ordem autoritária.", erradas: ["Uma fala mansa, calma e muito carinhosa do avô.", "Um sussurro ou um segredo contado ao pé do ouvido.", "Um erro de escrita que a gráfica deixou passar no livro."] },
@@ -313,15 +313,34 @@ function iniciarQuizUI() {
     document.getElementById('quiz-message').style.color = '#f0f';
     document.getElementById('quiz-message').innerText = "Recarga Neural. Responda a 5 questões para restabelecer munição.";
     if (jogoAtual) jogoAtual.physics.pause();
+    
+    // Reseta inputs ao abrir o quiz para não ficarem travados
+    if (jogoAtual) {
+        jogoAtual.atirando = false; 
+        jogoAtual.btnTiro.setAlpha(0.4);
+        jogoAtual.joystickAtivo = false;
+        jogoAtual.joyVelX = 0;
+        jogoAtual.joyVelY = 0;
+        if(jogoAtual.joyThumb) {
+            jogoAtual.joyBaseX = 150;
+            jogoAtual.joyBaseY = 400;
+            jogoAtual.joyBase.setPosition(jogoAtual.joyBaseX, jogoAtual.joyBaseY);
+            jogoAtual.joyThumb.setPosition(jogoAtual.joyBaseX, jogoAtual.joyBaseY);
+            jogoAtual.joyThumb.setAlpha(0.6);
+            jogoAtual.joyBase.setAlpha(0.2);
+        }
+        jogoAtual.pointerJoystick = null;
+        jogoAtual.pointerFire = null;
+    }
+    
     carregarPergunta();
 }
 
 function carregarPergunta() {
     if (faseQuizAtual >= 5) { finalizarQuiz(); return; }
-    if (questoesNaoUsadas.length === 0) questoesNaoUsadas = [...questoes]; // Refill se acabar as 140
+    if (questoesNaoUsadas.length === 0) questoesNaoUsadas = [...questoes]; // Refill
 
     let indexAleatorio = Math.floor(Math.random() * questoesNaoUsadas.length);
-    // A MÁGICA ANTI-REPETIÇÃO ACONTECE AQUI COM O SPLICE
     const q = questoesNaoUsadas.splice(indexAleatorio, 1)[0]; 
     
     document.getElementById('question-text').innerText = `Questão ${faseQuizAtual + 1}/5:\n\n${q.p}`;
@@ -386,7 +405,7 @@ function finalizarQuiz() {
 
 
 // ==========================================
-// 2. MOTOR DO JOGO (PHASER 3) COM RENDERIZAÇÃO LOCAL SEGURA E JOYSTICK
+// 2. MOTOR DO JOGO (PHASER 3) COM JOYSTICK VIRTUAL FLUTUANTE
 // ==========================================
 let phaserGame;
 let jogoAtual; 
@@ -413,31 +432,24 @@ class MainScene extends Phaser.Scene {
         gfx.fillStyle(0xff00ff, 1); gfx.fillCircle(6, 6, 6); gfx.generateTexture('tiroInimigo', 12, 12); gfx.clear();
         gfx.fillStyle(0xffaa00, 1); gfx.fillCircle(4, 4, 4); gfx.generateTexture('particula', 8, 8); gfx.clear();
         
-        // Power-ups Atuais
         gfx.fillStyle(0x00ff00, 1); gfx.fillRect(0, 0, 30, 30); gfx.fillStyle(0xffffff, 1); gfx.fillRect(12, 5, 6, 20); gfx.fillRect(5, 12, 20, 6); gfx.generateTexture('puSpread', 30, 30); gfx.clear();
         gfx.fillStyle(0xffff00, 1); gfx.fillRect(0, 0, 30, 30); gfx.fillStyle(0xff0000, 1); gfx.fillRect(8, 5, 4, 20); gfx.fillRect(18, 5, 4, 20); gfx.generateTexture('puRapid', 30, 30); gfx.clear();
         
-        // NOVOS POWER-UPS
-        // Vida (+25 HP) - Caixa Branca com Cruz Vermelha
         gfx.fillStyle(0xffffff, 1); gfx.fillRect(0, 0, 30, 30);
         gfx.fillStyle(0xff0000, 1); gfx.fillRect(12, 5, 6, 20); gfx.fillRect(5, 12, 20, 6);
         gfx.generateTexture('puHeal', 30, 30); gfx.clear();
 
-        // Escudo - Caixa Azul Escura com Círculo Branco
         gfx.fillStyle(0x0000ff, 1); gfx.fillRect(0, 0, 30, 30);
         gfx.lineStyle(3, 0xffffff, 1); gfx.strokeCircle(15, 15, 10);
         gfx.generateTexture('puShield', 30, 30); gfx.clear();
 
-        // Clone - Caixa Ciano com duas mini-naves representadas geometricamente
         gfx.fillStyle(0x00ffff, 1); gfx.fillRect(0, 0, 30, 30);
         gfx.lineStyle(3, 0xffffff, 1); gfx.beginPath(); gfx.arc(15, 15, 8, Math.PI * 0.25, Math.PI * 1.75, false); gfx.strokePath();
         gfx.generateTexture('puClone', 30, 30); gfx.clear();
 
-        // Escudo Visual (Aura)
         gfx.lineStyle(4, 0x00ffff, 0.8); gfx.fillStyle(0x0000ff, 0.3); gfx.fillCircle(40, 40, 35); gfx.strokeCircle(40, 40, 35);
         gfx.generateTexture('shieldAura', 80, 80); gfx.clear();
 
-        // Fallbacks Base
         gfx.lineStyle(3, 0x00ffff, 1); gfx.fillStyle(0x050510, 1); gfx.beginPath(); gfx.moveTo(35,0); gfx.lineTo(70,70); gfx.lineTo(35,55); gfx.lineTo(0,70); gfx.closePath(); gfx.fillPath(); gfx.strokePath(); gfx.generateTexture('fbNave', 70, 70); gfx.clear();
         gfx.fillStyle(0x0f0, 1); gfx.fillCircle(35,35,30); gfx.generateTexture('fbE1', 70, 70); gfx.clear();
         gfx.fillStyle(0x00f, 1); gfx.fillCircle(35,35,30); gfx.generateTexture('fbE2', 70, 70); gfx.clear();
@@ -522,33 +534,46 @@ class MainScene extends Phaser.Scene {
         this.time.addEvent({ delay: 1500, callback: this.gerarInimigos, callbackScope: this, loop: true });
 
         // ==========================================
-        // UI MÓVEL: JOYSTICK E BOTÃO DE TIRO
+        // UI MÓVEL: JOYSTICK FLUTUANTE E BOTÃO DE TIRO
         // ==========================================
-        this.joyBaseX = 120;
-        this.joyBaseY = 480; // Posição do Joystick mais alta
+        // Posições Base (Bem mais altas na tela)
+        this.joyBaseX = 150;
+        this.joyBaseY = 400; 
+        
         this.joyBase = this.add.circle(this.joyBaseX, this.joyBaseY, 60, 0x00ffff, 0.2).setScrollFactor(0).setDepth(100);
         this.joyThumb = this.add.circle(this.joyBaseX, this.joyBaseY, 30, 0x00ffff, 0.6).setScrollFactor(0).setDepth(101);
-        this.joyBase.setInteractive();
 
-        this.btnTiro = this.add.circle(700, 480, 50, 0xff00ff, 0.4).setScrollFactor(0).setDepth(100); // Posição do Tiro mais alta
-        this.txtTiro = this.add.text(700, 480, 'FOGO', { font: 'bold 18px Arial', fill: '#fff' }).setOrigin(0.5).setDepth(101);
-        this.btnTiro.setInteractive();
+        this.btnTiro = this.add.circle(700, 400, 60, 0xff00ff, 0.4).setScrollFactor(0).setDepth(100); // Mais alto e maior
+        this.txtTiro = this.add.text(700, 400, 'FOGO', { font: 'bold 20px Arial', fill: '#fff' }).setOrigin(0.5).setDepth(101);
 
         this.joystickAtivo = false;
         this.pointerJoystick = null;
+        this.pointerFire = null;
         this.joyVelX = 0;
         this.joyVelY = 0;
         this.atirando = false;
 
-        this.input.on('pointerdown', (pointer, gameObjects) => {
-            if (gameObjects.includes(this.btnTiro)) { 
+        // Joystick Adaptável: Clica na esquerda, o joystick vai até o dedo!
+        this.input.on('pointerdown', (pointer) => {
+            let distTiro = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.btnTiro.x, this.btnTiro.y);
+            
+            if (distTiro < 70) { 
                 this.atirando = true; 
-                this.btnTiro.setAlpha(0.8); 
+                this.btnTiro.setAlpha(0.8);
+                this.pointerFire = pointer;
             } 
-            if (gameObjects.includes(this.joyBase) || Phaser.Math.Distance.Between(pointer.x, pointer.y, this.joyBaseX, this.joyBaseY) < 80) {
+            else if (pointer.x < 400 && !this.joystickAtivo) {
                 this.joystickAtivo = true;
                 this.pointerJoystick = pointer;
+                
+                // O joystick "pula" para debaixo do dedo do jogador
+                this.joyBaseX = pointer.x;
+                this.joyBaseY = pointer.y;
+                this.joyBase.setPosition(this.joyBaseX, this.joyBaseY);
+                this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
+                
                 this.joyThumb.setAlpha(1);
+                this.joyBase.setAlpha(0.5);
             }
         });
 
@@ -562,10 +587,9 @@ class MainScene extends Phaser.Scene {
                 this.joyThumb.x = this.joyBaseX + Math.cos(angle) * dist;
                 this.joyThumb.y = this.joyBaseY + Math.sin(angle) * dist;
 
-                let velocidadeMaxima = 400;
-                let velocidadeAtual = (dist / 60) * velocidadeMaxima;
-                this.joyVelX = Math.cos(angle) * velocidadeAtual;
-                this.joyVelY = Math.sin(angle) * velocidadeAtual;
+                let velocidadeMaxima = 450; // Nave muito mais rápida e responsiva
+                this.joyVelX = Math.cos(angle) * (dist / 60) * velocidadeMaxima;
+                this.joyVelY = Math.sin(angle) * (dist / 60) * velocidadeMaxima;
             }
         });
 
@@ -573,14 +597,34 @@ class MainScene extends Phaser.Scene {
             if (pointer === this.pointerJoystick) {
                 this.joystickAtivo = false;
                 this.pointerJoystick = null;
+                
+                // Retorna à posição inicial visível
+                this.joyBaseX = 150;
+                this.joyBaseY = 400;
+                this.joyBase.setPosition(this.joyBaseX, this.joyBaseY);
                 this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
+                
                 this.joyThumb.setAlpha(0.6);
+                this.joyBase.setAlpha(0.2);
                 this.joyVelX = 0;
                 this.joyVelY = 0;
             }
+            if (pointer === this.pointerFire) {
+                this.atirando = false; 
+                this.btnTiro.setAlpha(0.4); 
+                this.pointerFire = null;
+            }
         });
-        this.btnTiro.on('pointerup', () => { this.atirando = false; this.btnTiro.setAlpha(0.4); });
-        this.btnTiro.on('pointerout', () => { this.atirando = false; this.btnTiro.setAlpha(0.4); });
+        
+        // Se o dedo sair da tela
+        this.input.on('gameout', () => {
+            this.atirando = false;
+            this.btnTiro.setAlpha(0.4);
+            this.joystickAtivo = false;
+            this.joyVelX = 0;
+            this.joyVelY = 0;
+            this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
+        });
         
         this.teclas = this.input.keyboard.createCursorKeys();
     }
@@ -590,7 +634,7 @@ class MainScene extends Phaser.Scene {
 
         // Posicionamento de Elementos Seguidires (Clone e Escudo)
         if (this.cloneAtivo) {
-            this.cloneShip.x = this.player.x - 60; // Clone fica um pouco à esquerda
+            this.cloneShip.x = this.player.x - 60; 
             this.cloneShip.y = this.player.y + 20;
         }
         if (this.hasShield) {
@@ -610,8 +654,8 @@ class MainScene extends Phaser.Scene {
             velX = this.joyVelX;
             velY = this.joyVelY;
         } else {
-            if (this.teclas.left.isDown) velX = -400; else if (this.teclas.right.isDown) velX = 400;
-            if (this.teclas.up.isDown) velY = -400; else if (this.teclas.down.isDown) velY = 400;
+            if (this.teclas.left.isDown) velX = -450; else if (this.teclas.right.isDown) velX = 450;
+            if (this.teclas.up.isDown) velY = -450; else if (this.teclas.down.isDown) velY = 450;
         }
 
         this.player.setVelocity(velX, velY);
@@ -662,7 +706,6 @@ class MainScene extends Phaser.Scene {
         if (this.municao <= 0) { this.atirando = false; this.btnTiro.setAlpha(0.4); iniciarQuizUI(); return; }
         this.municao--; sfx.shoot(); 
         
-        // Tiros da Nave Principal
         if (this.tipoArma === 'spread') {
             let t1 = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); t1.setVelocityY(-700);
             let t2 = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); t2.setVelocity(-150, -700); t2.setAngle(-15);
@@ -671,7 +714,6 @@ class MainScene extends Phaser.Scene {
             let tiro = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); tiro.setVelocityY(-700);
         }
 
-        // Tiros do Clone (se ativo)
         if (this.cloneAtivo) {
             let tiroClone = this.grupoTirosPlayer.create(this.cloneShip.x, this.cloneShip.y - 30, 'tiroPlayer');
             tiroClone.setVelocityY(-700);
@@ -713,7 +755,6 @@ class MainScene extends Phaser.Scene {
         tiro.destroy(); this.emissorExplosao.emitParticleAt(inimigo.x, inimigo.y, 15); sfx.expl(); 
         this.pontuacao += inimigo.pontos; this.txtScore.setText('PTS: ' + this.pontuacao);
         
-        // Taxa de queda de power-ups (15% para que se veja com frequência)
         if (Math.random() < 0.15) {
             let tipos = ['spread', 'rapid', 'heal', 'shield', 'clone'];
             let tipoPU = tipos[Math.floor(Math.random() * tipos.length)];
@@ -780,7 +821,6 @@ class MainScene extends Phaser.Scene {
     }
 
     levarDano(valor) {
-        // Bloqueio de dano se estiver imune ou com escudo
         if (this.isImmune || this.hasShield) return;
 
         this.saude -= valor; this.player.setTintFill(0xff0000); sfx.expl(); 
@@ -800,20 +840,19 @@ class MainScene extends Phaser.Scene {
     bateuInimigo(jogador, inimigo) { 
         this.emissorExplosao.emitParticleAt(inimigo.x, inimigo.y, 15); 
         inimigo.destroy(); 
-        this.levarDano(25); // O dano real só é aplicado se não tiver escudo/imunidade
+        this.levarDano(25); 
     }
 
     retomarJogo() {
         this.physics.resume(); 
         
-        // Efeito de Imunidade por 10 Segundos com piscar visual
         this.isImmune = true;
         this.tweens.add({
             targets: this.player,
             alpha: { from: 1, to: 0.2 },
             ease: 'Linear',
             duration: 500,
-            repeat: 9, // Faz 10 ciclos completos de 1 segundo (500ms desce, 500ms sobe) = 10 Segundos
+            repeat: 9, 
             yoyo: true,
             onComplete: () => {
                 this.isImmune = false;
@@ -827,10 +866,14 @@ class MainScene extends Phaser.Scene {
         this.joyVelX = 0;
         this.joyVelY = 0;
         if(this.joyThumb) {
+            this.joyBaseX = 150;
+            this.joyBaseY = 400;
+            this.joyBase.setPosition(this.joyBaseX, this.joyBaseY);
             this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
             this.joyThumb.setAlpha(0.6);
+            this.joyBase.setAlpha(0.2);
         }
-        this.ponteiroMovimento = null;
+        this.ponteiroJoystick = null;
     }
 }
 </script>
