@@ -14,7 +14,7 @@
             -webkit-touch-callout: none;
         }
         #game-container { 
-            position: relative; width: 100%; height: 100%; max-width: 800px; max-height: 600px; 
+            position: relative; width: 100%; height: 100%; max-width: 100vw; max-height: 100vh; 
             background-color: #050510; box-shadow: 0 0 20px #0ff;
         }
         #quiz-ui {
@@ -25,7 +25,7 @@
         }
         #quiz-box {
             background-color: #111; border: 2px solid #0ff; border-radius: 15px;
-            padding: 20px; width: 100%; max-width: 550px; box-shadow: 0 0 20px #0ff;
+            padding: 20px; width: 90%; max-width: 600px; box-shadow: 0 0 20px #0ff;
             max-height: 95vh; overflow-y: auto;
         }
         h2 { color: #0ff; margin-top: 0; text-transform: uppercase; font-size: 20px; }
@@ -322,8 +322,9 @@ function iniciarQuizUI() {
         jogoAtual.joyVelX = 0;
         jogoAtual.joyVelY = 0;
         if(jogoAtual.joyThumb) {
-            jogoAtual.joyBaseX = 120;
-            jogoAtual.joyBaseY = 525;
+            // Reposiciona o joystick virtual na posição padrão de repouso
+            jogoAtual.joyBaseX = 180;
+            jogoAtual.joyBaseY = 550;
             jogoAtual.joyBase.setPosition(jogoAtual.joyBaseX, jogoAtual.joyBaseY);
             jogoAtual.joyThumb.setPosition(jogoAtual.joyBaseX, jogoAtual.joyBaseY);
             jogoAtual.joyThumb.setAlpha(0.6);
@@ -405,7 +406,7 @@ function finalizarQuiz() {
 
 
 // ==========================================
-// 2. MOTOR DO JOGO (PHASER 3) COM RENDERIZAÇÃO LOCAL SEGURA E JOYSTICK NOVO
+// 2. MOTOR DO JOGO (PHASER 3) COM RESOLUÇÃO WIDESCREEN E JOYSTICK FLUTUANTE
 // ==========================================
 let phaserGame;
 let jogoAtual; 
@@ -414,9 +415,10 @@ function iniciarJogo() {
     document.getElementById('start-ui').style.display = 'none';
     initAudio(); 
     const config = {
-        type: Phaser.CANVAS, // Garante que as imagens locais carregam sem bloqueios do WebGL
+        type: Phaser.CANVAS, 
         parent: 'game-container',
-        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 800, height: 600 },
+        // Resolução 16:9 ideal para celulares deitados
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 1280, height: 720 },
         physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
         input: { activePointers: 3 }, scene: MainScene
     };
@@ -482,15 +484,25 @@ class MainScene extends Phaser.Scene {
         this.keyBoss2 = addTex('imgBoss2', 'txBoss2', 'fbBoss2');
         this.keyBoss3 = addTex('imgBoss3', 'txBoss3', 'fbBoss3');
 
-        // Cria o painel inferior para os controlos (Fora da área do jogo)
-        this.add.rectangle(400, 525, 800, 150, 0x050510).setDepth(90);
-        this.add.rectangle(400, 450, 800, 4, 0x00ffff).setDepth(90);
-
+        // Fundo estrelado adaptado para 1280x720
         this.estrelas = this.add.group();
         for (let i = 0; i < 100; i++) {
-            let estrela = this.add.circle(Phaser.Math.Between(0, 800), Phaser.Math.Between(0, 450), Math.random() * 2, 0x00ffff);
+            let estrela = this.add.circle(Phaser.Math.Between(0, 1280), Phaser.Math.Between(0, 720), Math.random() * 2, 0x00ffff);
             estrela.velocidade = Math.random() * 3 + 1; this.estrelas.add(estrela);
         }
+
+        // UI NO TOPO DO ECRÃ
+        this.add.rectangle(640, 35, 1280, 70, 0x050510).setDepth(90);
+        this.add.rectangle(640, 70, 1280, 4, 0x00ffff).setDepth(90);
+
+        const estiloTexto = { font: 'bold 24px Arial', fill: '#0ff', align: 'center' };
+        this.txtScore = this.add.text(200, 35, 'PTS: 0', estiloTexto).setOrigin(0.5).setDepth(101);
+        this.txtNivel = this.add.text(450, 35, 'NÍVEL: 1', estiloTexto).setOrigin(0.5).setDepth(101);
+        this.txtMunicao = this.add.text(850, 35, 'MUN: 50', { font: 'bold 24px Arial', fill: '#f0f', align: 'center' }).setOrigin(0.5).setDepth(101);
+        this.txtSaude = this.add.text(1100, 35, 'HP: 100%', { font: 'bold 24px Arial', fill: '#0f0', align: 'center' }).setOrigin(0.5).setDepth(101);
+        
+        this.uiBoss = this.add.text(640, 100, 'CHEFÃO', { font: 'bold 28px Arial', fill: '#f00' }).setOrigin(0.5).setDepth(101); 
+        this.uiBoss.setVisible(false);
 
         this.emissorExplosao = this.add.particles(0, 0, 'particula', { emitting: false, speed: { min: 50, max: 200 }, scale: { start: 1, end: 0 }, lifespan: 500, blendMode: 'ADD' });
 
@@ -500,15 +512,13 @@ class MainScene extends Phaser.Scene {
         this.bossGroup = this.physics.add.group();
         this.grupoPowerUps = this.physics.add.group(); 
 
-        // Jogador nasce num pouco mais acima para não sobrepor o painel
-        this.player = this.physics.add.sprite(400, 380, this.keyNave);
+        this.player = this.physics.add.sprite(640, 600, this.keyNave);
         this.player.setDisplaySize(70, 70); this.player.body.setSize(this.player.width * 0.5, this.player.height * 0.7); this.player.setCollideWorldBounds(false); 
 
         // Sistemas do Jogador
         this.pontuacao = 0; this.municao = 50; this.saude = 100; this.nivel = 1; this.metaPontosFase = 500; this.ultimoTiro = 0;
         this.isBossFight = false; this.bossHP = 0; this.tipoArma = 'normal'; this.timerArma = null;
         
-        // Novos Sistemas
         this.isImmune = false;
         this.hasShield = false;
         this.shieldAura = this.add.sprite(0, 0, 'shieldAura');
@@ -522,15 +532,6 @@ class MainScene extends Phaser.Scene {
         this.cloneShip.setAlpha(0.7);
         this.cloneShip.setVisible(false);
 
-        // Textos agora ficam organizados no painel inferior
-        const estiloTextoCentro = { font: 'bold 18px Arial', fill: '#0ff', align: 'center' };
-        this.txtScore = this.add.text(400, 475, 'PTS: 0', estiloTextoCentro).setOrigin(0.5).setDepth(101);
-        this.txtNivel = this.add.text(400, 505, 'NÍVEL: 1', estiloTextoCentro).setOrigin(0.5).setDepth(101);
-        this.txtMunicao = this.add.text(400, 535, 'MUN: 50', { font: 'bold 18px Arial', fill: '#f0f', align: 'center' }).setOrigin(0.5).setDepth(101);
-        this.txtSaude = this.add.text(400, 565, 'HP: 100%', { font: 'bold 18px Arial', fill: '#0f0', align: 'center' }).setOrigin(0.5).setDepth(101);
-        
-        this.uiBoss = this.add.text(400, 30, 'CHEFÃO', { font: 'bold 20px Arial', fill: '#f00' }).setOrigin(0.5); this.uiBoss.setVisible(false);
-
         this.physics.add.overlap(this.grupoTirosPlayer, this.grupoInimigos, this.acertouInimigo, null, this);
         this.physics.add.overlap(this.grupoTirosPlayer, this.bossGroup, this.hitBoss, null, this);
         this.physics.add.overlap(this.grupoTirosInimigos, this.player, this.levouTiro, null, this);
@@ -541,16 +542,17 @@ class MainScene extends Phaser.Scene {
         this.time.addEvent({ delay: 1500, callback: this.gerarInimigos, callbackScope: this, loop: true });
 
         // ==========================================
-        // UI MÓVEL: JOYSTICK E BOTÃO DE TIRO NO PAINEL DEDICADO
+        // UI MÓVEL: JOYSTICK FLUTUANTE E FOGO RESPONSIVO
         // ==========================================
-        this.joyBaseX = 120;
-        this.joyBaseY = 525; 
+        this.joyBaseX = 180;
+        this.joyBaseY = 550; 
         
-        this.joyBase = this.add.circle(this.joyBaseX, this.joyBaseY, 60, 0x00ffff, 0.2).setScrollFactor(0).setDepth(100);
-        this.joyThumb = this.add.circle(this.joyBaseX, this.joyBaseY, 30, 0x00ffff, 0.6).setScrollFactor(0).setDepth(101);
+        this.joyBase = this.add.circle(this.joyBaseX, this.joyBaseY, 70, 0x00ffff, 0.2).setScrollFactor(0).setDepth(100);
+        this.joyThumb = this.add.circle(this.joyBaseX, this.joyBaseY, 35, 0x00ffff, 0.6).setScrollFactor(0).setDepth(101);
 
-        this.btnTiro = this.add.circle(680, 525, 50, 0xff00ff, 0.4).setScrollFactor(0).setDepth(100); 
-        this.txtTiro = this.add.text(680, 525, 'FOGO', { font: 'bold 20px Arial', fill: '#fff' }).setOrigin(0.5).setDepth(101);
+        // Botão de fogo visual mais elevado
+        this.btnTiro = this.add.circle(1100, 550, 70, 0xff00ff, 0.4).setScrollFactor(0).setDepth(100); 
+        this.txtTiro = this.add.text(1100, 550, 'FOGO', { font: 'bold 24px Arial', fill: '#fff' }).setOrigin(0.5).setDepth(101);
 
         this.joystickAtivo = false;
         this.pointerJoystick = null;
@@ -559,16 +561,17 @@ class MainScene extends Phaser.Scene {
         this.joyVelY = 0;
         this.atirando = false;
 
-        // O joystick adapta-se ao clique, desde que seja tocado na zona do painel de controlo!
         this.input.on('pointerdown', (pointer) => {
             let distTiro = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.btnTiro.x, this.btnTiro.y);
             
-            if (distTiro < 70) { 
+            // Qualquer clique na metade direita da tela (x >= 640) ou no próprio botão ativa o tiro!
+            if (distTiro < 100 || pointer.x >= 640) { 
                 this.atirando = true; 
                 this.btnTiro.setAlpha(0.8);
                 this.pointerFire = pointer;
             } 
-            else if (pointer.x < 400 && pointer.y > 450 && !this.joystickAtivo) {
+            // Qualquer clique na metade esquerda da tela abaixo da UI do topo (x < 640 e y > 80) ativa o Joystick Flutuante!
+            else if (pointer.x < 640 && pointer.y > 80 && !this.joystickAtivo) {
                 this.joystickAtivo = true;
                 this.pointerJoystick = pointer;
                 
@@ -587,14 +590,14 @@ class MainScene extends Phaser.Scene {
                 let dist = Phaser.Math.Distance.Between(this.joyBaseX, this.joyBaseY, pointer.x, pointer.y);
                 let angle = Phaser.Math.Angle.Between(this.joyBaseX, this.joyBaseY, pointer.x, pointer.y);
                 
-                if (dist > 60) dist = 60;
+                if (dist > 70) dist = 70; // Raio maior para o joystick
                 
                 this.joyThumb.x = this.joyBaseX + Math.cos(angle) * dist;
                 this.joyThumb.y = this.joyBaseY + Math.sin(angle) * dist;
 
-                let velocidadeMaxima = 450; 
-                this.joyVelX = Math.cos(angle) * (dist / 60) * velocidadeMaxima;
-                this.joyVelY = Math.sin(angle) * (dist / 60) * velocidadeMaxima;
+                let velocidadeMaxima = 500; // Nave mais rápida para a tela maior
+                this.joyVelX = Math.cos(angle) * (dist / 70) * velocidadeMaxima;
+                this.joyVelY = Math.sin(angle) * (dist / 70) * velocidadeMaxima;
             }
         });
 
@@ -603,8 +606,8 @@ class MainScene extends Phaser.Scene {
                 this.joystickAtivo = false;
                 this.pointerJoystick = null;
                 
-                this.joyBaseX = 120;
-                this.joyBaseY = 525;
+                this.joyBaseX = 180;
+                this.joyBaseY = 550;
                 this.joyBase.setPosition(this.joyBaseX, this.joyBaseY);
                 this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
                 
@@ -636,7 +639,7 @@ class MainScene extends Phaser.Scene {
         if (quizEmAndamento || this.saude <= 0) { this.player.setVelocity(0); return; }
 
         if (this.cloneAtivo) {
-            this.cloneShip.x = this.player.x - 60; 
+            this.cloneShip.x = this.player.x - 70; 
             this.cloneShip.y = this.player.y + 20;
         }
         if (this.hasShield) {
@@ -646,7 +649,7 @@ class MainScene extends Phaser.Scene {
 
         this.estrelas.children.iterate((estrela) => {
             estrela.y += estrela.velocidade + (this.nivel * 0.5) + (this.isBossFight ? 5 : 0);
-            if (estrela.y > 450) { estrela.y = 0; estrela.x = Phaser.Math.Between(0, 800); }
+            if (estrela.y > 750) { estrela.y = 0; estrela.x = Phaser.Math.Between(0, 1280); }
         });
         
         let velX = 0;
@@ -656,25 +659,25 @@ class MainScene extends Phaser.Scene {
             velX = this.joyVelX;
             velY = this.joyVelY;
         } else {
-            if (this.teclas.left.isDown) velX = -450; else if (this.teclas.right.isDown) velX = 450;
-            if (this.teclas.up.isDown) velY = -450; else if (this.teclas.down.isDown) velY = 450;
+            if (this.teclas.left.isDown) velX = -500; else if (this.teclas.right.isDown) velX = 500;
+            if (this.teclas.up.isDown) velY = -500; else if (this.teclas.down.isDown) velY = 500;
         }
 
         this.player.setVelocity(velX, velY);
 
-        // Mantém a nave na área da tela de jogo e fora do painel de controlo
-        this.player.x = Phaser.Math.Clamp(this.player.x, 35, 765); 
-        this.player.y = Phaser.Math.Clamp(this.player.y, 35, 415); // O painel começa no 450
+        // Limita a nave dentro dos limites panorâmicos e abaixo do HUD do topo
+        this.player.x = Phaser.Math.Clamp(this.player.x, 35, 1245); 
+        this.player.y = Phaser.Math.Clamp(this.player.y, 110, 685);
 
         let delayTiro = this.tipoArma === 'rapid' ? 100 : 200;
         if ((this.atirando || this.teclas.space.isDown) && tempo > this.ultimoTiro) { this.atirar(); this.ultimoTiro = tempo + delayTiro; }
 
         this.grupoTirosPlayer.children.each(b => { if (b.active && b.y < -50) b.destroy(); });
-        this.grupoTirosInimigos.children.each(b => { if (b.active && b.y > 500) b.destroy(); });
-        this.grupoPowerUps.children.each(p => { if (p.active && p.y > 500) p.destroy(); });
+        this.grupoTirosInimigos.children.each(b => { if (b.active && b.y > 750) b.destroy(); });
+        this.grupoPowerUps.children.each(p => { if (p.active && p.y > 750) p.destroy(); });
         
         this.grupoInimigos.children.each(e => { 
-            if (e.active && e.y > 500) e.destroy(); 
+            if (e.active && e.y > 750) e.destroy(); 
             if (e.active && e.podeAtirar && Math.random() < 0.015 * this.nivel) {
                 let tiro = this.grupoTirosInimigos.create(e.x, e.y + 30, 'tiroInimigo'); tiro.setVelocityY(300 + (this.nivel * 20)); sfx.enemyShoot(); 
             }
@@ -683,7 +686,7 @@ class MainScene extends Phaser.Scene {
         if (this.isBossFight && this.boss && this.boss.active) {
             this.uiBoss.setText('CHEFÃO: ' + this.bossHP);
             let speedMod = this.boss.tipoBoss === 1 ? 300 : 200; 
-            if(this.boss.x < 100) this.boss.setVelocityX(speedMod + (this.nivel * 20)); else if (this.boss.x > 700) this.boss.setVelocityX(-(speedMod + (this.nivel * 20)));
+            if(this.boss.x < 150) this.boss.setVelocityX(speedMod + (this.nivel * 20)); else if (this.boss.x > 1130) this.boss.setVelocityX(-(speedMod + (this.nivel * 20)));
 
             if (tempo > this.boss.ultimoTiroBoss) {
                 sfx.enemyShoot();
@@ -708,7 +711,6 @@ class MainScene extends Phaser.Scene {
         if (this.municao <= 0) { this.atirando = false; this.btnTiro.setAlpha(0.4); iniciarQuizUI(); return; }
         this.municao--; sfx.shoot(); 
         
-        // Tiros da Nave Principal
         if (this.tipoArma === 'spread') {
             let t1 = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); t1.setVelocityY(-700);
             let t2 = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); t2.setVelocity(-150, -700); t2.setAngle(-15);
@@ -717,7 +719,6 @@ class MainScene extends Phaser.Scene {
             let tiro = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); tiro.setVelocityY(-700);
         }
 
-        // Tiros do Clone (se ativo)
         if (this.cloneAtivo) {
             let tiroClone = this.grupoTirosPlayer.create(this.cloneShip.x, this.cloneShip.y - 30, 'tiroPlayer');
             tiroClone.setVelocityY(-700);
@@ -732,7 +733,7 @@ class MainScene extends Phaser.Scene {
             let indiceChefe = (this.nivel - 1) % 3; 
             let arrayChaves = [this.keyBoss1, this.keyBoss2, this.keyBoss3];
             this.bossHP = 300 * this.nivel;
-            this.boss = this.bossGroup.create(400, -100, arrayChaves[indiceChefe]); 
+            this.boss = this.bossGroup.create(640, -100, arrayChaves[indiceChefe]); 
             this.boss.setDisplaySize(150, 150); this.boss.body.setSize(this.boss.width * 0.7, this.boss.height * 0.7);
             this.boss.tipoBoss = indiceChefe; this.boss.ultimoTiroBoss = 0; this.boss.setVelocityY(50);
             setTimeout(() => { if(this.boss && this.boss.active) { this.boss.setVelocityY(0); this.boss.setVelocityX(200 + (this.nivel * 20)); this.uiBoss.setVisible(true); } }, 3000);
@@ -741,13 +742,13 @@ class MainScene extends Phaser.Scene {
         
         if(this.isBossFight) return; 
 
-        let quantidade = Math.min(4, 1 + Math.floor(this.nivel / 3));
+        let quantidade = Math.min(6, 2 + Math.floor(this.nivel / 3)); // Aumentado um pouco para a tela maior
         for (let i = 0; i < quantidade; i++) {
             let sorteio = Math.random(); let imgChave = this.keyE1; let pontos = 5; let podeAtirar = false; let multiVelocidade = 1.0;
             if (sorteio >= 0.4 && sorteio < 0.75) { imgChave = this.keyE2; pontos = 10; podeAtirar = true; multiVelocidade = 1.2; } 
             else if (sorteio >= 0.75) { imgChave = this.keyE3; pontos = 20; podeAtirar = true; multiVelocidade = 1.5; }
 
-            let inimigo = this.grupoInimigos.create(Phaser.Math.Between(50, 750), Phaser.Math.Between(-150, -50), imgChave);
+            let inimigo = this.grupoInimigos.create(Phaser.Math.Between(50, 1230), Phaser.Math.Between(-150, -50), imgChave);
             if (imgChave === 'txAranha' || imgChave === 'txEscorpiao' || imgChave === 'fbE2' || imgChave === 'fbE3') {
                 inimigo.setAngle(90); inimigo.setDisplaySize(70, 70); inimigo.body.setSize(inimigo.width * 0.6, inimigo.height * 0.6);
             } else { inimigo.setDisplaySize(65, 65); inimigo.body.setSize(inimigo.width * 0.7, inimigo.height * 0.7); }
@@ -831,7 +832,7 @@ class MainScene extends Phaser.Scene {
         setTimeout(() => { if (this.player) this.player.clearTint(); }, 150);
         if (this.saude <= 0) {
             this.saude = 0; this.physics.pause();
-            this.add.text(400, 300, 'FIM DE JOGO\nToque para tentar de novo', { font: 'bold 24px Arial', fill: '#f00', align: 'center', backgroundColor: '#000', padding: 15 }).setOrigin(0.5);
+            this.add.text(640, 360, 'FIM DE JOGO\nToque para tentar de novo', { font: 'bold 36px Arial', fill: '#f00', align: 'center', backgroundColor: '#000', padding: 15 }).setOrigin(0.5);
             this.input.once('pointerdown', () => location.reload());
         }
     }
@@ -870,14 +871,14 @@ class MainScene extends Phaser.Scene {
         this.joyVelX = 0;
         this.joyVelY = 0;
         if(this.joyThumb) {
-            this.joyBaseX = 120;
-            this.joyBaseY = 525;
+            this.joyBaseX = 180;
+            this.joyBaseY = 550;
             this.joyBase.setPosition(this.joyBaseX, this.joyBaseY);
             this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
             this.joyThumb.setAlpha(0.6);
             this.joyBase.setAlpha(0.2);
         }
-        this.ponteiroJoystick = null;
+        this.pointerJoystick = null;
     }
 }
 </script>
