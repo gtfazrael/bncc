@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CyberStrike: Edição SARESP Mobile</title>
+    <!-- Carregando a biblioteca do motor de jogo -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+    <style>
+        body { 
+            margin: 0; padding: 0; background-color: #000; overflow: hidden; 
+            display: flex; justify-content: center; align-items: center; height: 100vh; 
+            font-family: 'Arial', sans-serif; touch-action: none; user-select: none;
+            -webkit-touch-callout: none;
+        }
+        #game-container { 
+            position: relative; width: 100%; height: 100%; max-width: 800px; max-height: 600px; 
+            background-color: #050510; box-shadow: 0 0 20px #0ff;
+        }
+        #quiz-ui {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(5, 5, 20, 0.98); z-index: 100;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            padding: 15px; box-sizing: border-box;
+        }
+        #quiz-box {
+            background-color: #111; border: 2px solid #0ff; border-radius: 15px;
+            padding: 20px; width: 100%; max-width: 550px; box-shadow: 0 0 20px #0ff;
+            max-height: 95vh; overflow-y: auto;
+        }
+        h2 { color: #0ff; margin-top: 0; text-transform: uppercase; font-size: 20px; }
+        #quiz-message { color: #f0f; font-weight: bold; margin-bottom: 15px; font-size: 14px; white-space: pre-line; }
+        #question-text { color: #fff; font-size: 15px; margin-bottom: 20px; min-height: 60px; line-height: 1.5; text-align: left;}
+        .answer-btn {
+            background-color: rgba(0, 255, 255, 0.1); border: 2px solid #0ff; color: #0ff;
+            padding: 12px; margin: 6px 0; width: 100%; border-radius: 8px;
+            font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: left;
+        }
+        .answer-btn:active { background-color: #0ff; color: #000; transform: scale(0.98); }
+        .answer-btn:disabled { opacity: 0.5; pointer-events: none; }
+        
+        #start-ui {
+            display: flex; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; z-index: 200; flex-direction: column; 
+            justify-content: center; align-items: center; text-align: center;
+        }
+        #start-ui h1 { color: #0ff; font-size: 32px; text-shadow: 0 0 15px #0ff; margin-bottom: 50px; }
+        
+        #btn-start {
+            background-color: #333; border: 3px solid #555; color: #aaa;
+            padding: 15px 30px; font-size: 20px; border-radius: 10px; font-weight: bold;
+            cursor: not-allowed; transition: 0.3s;
+        }
+        #btn-start.ready {
+            background-color: #000; border-color: #f0f; color: #f0f;
+            box-shadow: 0 0 20px #f0f; text-shadow: 0 0 10px #f0f; cursor: pointer;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        #custom-alert {
+            display: none; position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #f00; color: #fff; padding: 10px 20px; border-radius: 5px; font-weight: bold; 
+            z-index: 300; box-shadow: 0 0 10px #f00; text-align: center; font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Imagens Nativas (Carregadas pelo navegador antes do Phaser iniciar) -->
+    <div style="display: none;">
+        <img id="imgNave" src="nave.png" alt="Nave">
+        <img id="imgFormiga" src="formiga.png" alt="Formiga">
+        <img id="imgAranha" src="aranha.png" alt="Aranha">
+        <img id="imgEscorpiao" src="escorpiao.png" alt="Escorpiao">
+        <img id="imgBoss1" src="boss1.png" alt="Chefe 1">
+        <img id="imgBoss2" src="boss 2.png" alt="Chefe 2">
+        <img id="imgBoss3" src="boss 3.png" alt="Chefe 3">
+    </div>
+
+    <div id="game-container">
+        <div id="start-ui">
+            <h1>CYBERSTRIKE<br><span style="font-size:18px; color:#f0f;">Edição SARESP Mobile</span></h1>
+            <button id="btn-start" disabled>CARREGANDO NAVE...</button>
+        </div>
+        <div id="custom-alert">Mensagem</div>
+        <div id="quiz-ui">
+            <div id="quiz-box">
+                <h2>RECARGA NEURAL</h2>
+                <div id="quiz-message">Munição esgotada! Responda para recarregar.</div>
+                <div id="question-text">Carregando pergunta...</div>
+                <div id="answers-container"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ==========================================
+// PREPARAÇÃO SEGURA DAS IMAGENS
+// ==========================================
+window.addEventListener('load', () => {
+    const btn = document.getElementById('btn-start');
+    btn.innerText = "INICIAR COMBATE";
+    btn.disabled = false;
+    btn.classList.add('ready');
+    btn.onclick = iniciarJogo;
+});
+
+// ==========================================
+// FUNÇÕES AUXILIARES E ÁUDIO
+// ==========================================
+function mostrarAlerta(msg) {
+    const al = document.getElementById('custom-alert');
+    al.innerText = msg; al.style.display = 'block';
+    setTimeout(() => { al.style.display = 'none'; }, 4000);
+}
+
+let audioCtx = null;
+function initAudio() {
+    try {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch(e) {}
+}
+
+function playSfx(freq, type, duration, vol=0.1) {
+    if (!audioCtx) return;
+    try {
+        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(1, freq/2), audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+}
+
+const sfx = {
+    shoot: () => playSfx(800, 'square', 0.1, 0.03),      
+    enemyShoot: () => playSfx(400, 'triangle', 0.15, 0.03), 
+    expl: () => playSfx(100, 'sawtooth', 0.3, 0.1),      
+    power: () => playSfx(600, 'sine', 0.4, 0.1),         
+    error: () => playSfx(150, 'sawtooth', 0.2, 0.1)      
+};
+
+// ==========================================
+// MEGA BANCO DE QUESTÕES BRASILEIRAS INTERDISCIPLINARES (140 Questões)
+// ==========================================
+const questoes = [
+    // --- D1: Localizar informações explícitas ---
+    { p: "[D1] A capital do Brasil, Brasília, foi inaugurada em 1960 pelo presidente Juscelino Kubitschek no Planalto Central. Em que ano a cidade foi inaugurada?", r: "Em 1960.", erradas: ["Em 1500.", "No século XIX.", "Em 1822."] },
+    { p: "[D1] O Cerrado é o segundo maior bioma do Brasil e é o lar de animais como o lobo-guará e o tamanduá-bandeira. Qual animal vive no Cerrado segundo o texto?", r: "O lobo-guará.", erradas: ["A onça-pintada.", "O boto-cor-de-rosa.", "O tucano."] },
+    { p: "[D1] Em 1822, às margens do rio Ipiranga, Dom Pedro I declarou a independência do Brasil em relação a Portugal. Em que rio a independência foi declarada?", r: "No rio Ipiranga.", erradas: ["No rio Amazonas.", "No rio São Francisco.", "No rio Tietê."] },
+    { p: "[D1] O mosquito Aedes aegypti é o principal transmissor da dengue e se reproduz em água parada e limpa. Onde o mosquito se reproduz?", r: "Em água parada e limpa.", erradas: ["No lixo seco.", "Em água barrenta e suja.", "No ar poluído."] },
+    { p: "[D1] A Floresta Amazônica possui a maior bacia hidrográfica do mundo, o rio Amazonas, que nasce no Peru. Qual é o nome do rio citado no texto?", r: "Rio Amazonas.", erradas: ["Rio Paraná.", "Rio Negro.", "Rio Tocantins."] },
+    { p: "[D1] Durante o Brasil Colônia, os bandeirantes exploravam o interior do país em busca de ouro e pedras preciosas. O que os bandeirantes buscavam?", r: "Ouro e pedras preciosas.", erradas: ["Pau-brasil e especiarias.", "Terras férteis para café.", "Animais para caça."] },
+    { p: "[D1] A Caatinga é um bioma exclusivamente brasileiro, localizado na região Nordeste, caracterizado pelo clima quente e seco. Onde a Caatinga está localizada?", r: "Na região Nordeste.", erradas: ["Na região Sul.", "Na região Norte.", "No Centro-Oeste."] },
+    { p: "[D1] Tiradentes foi um dos líderes da Inconfidência Mineira, um movimento que lutava contra os impostos abusivos cobrados por Portugal. Contra o que eles lutavam?", r: "Contra os impostos abusivos.", erradas: ["Contra a escravidão.", "Contra o rei do Brasil.", "Contra a seca em Minas."] },
+    { p: "[D1] O Rio São Francisco, conhecido como 'Velho Chico', é fundamental para a irrigação de plantações no Nordeste brasileiro. Qual o apelido do rio?", r: "Velho Chico.", erradas: ["Rio Mar.", "Rio Doce.", "Chico Rei."] },
+    { p: "[D1] A vacina contra a poliomielite, muitas vezes dada em formato de 'gotinha', erradicou a doença no Brasil em 1989. Qual era o formato comum dessa vacina?", r: "Em formato de gotinha.", erradas: ["Em formato de pílula.", "Uma injeção no braço.", "Um xarope doce."] },
+    { p: "[D1] Machado de Assis, nascido no Rio de Janeiro, foi um dos maiores escritores brasileiros e fundou a Academia Brasileira de Letras. Onde ele nasceu?", r: "No Rio de Janeiro.", erradas: ["Em São Paulo.", "Em Minas Gerais.", "Em Salvador."] },
+    { p: "[D1] A arara-azul-de-lear vive na região do Raso da Catarina, na Bahia, e se alimenta do coquinho da palmeira licuri. Do que a arara se alimenta?", r: "Do coquinho da palmeira licuri.", erradas: ["De insetos da Caatinga.", "De folhas de bananeira.", "De pequenos roedores."] },
+    { p: "[D1] A capoeira foi criada no Brasil por pessoas escravizadas de origem africana como uma forma de defesa disfarçada de dança. Quem criou a capoeira?", r: "Pessoas escravizadas de origem africana.", erradas: ["Os indígenas brasileiros.", "Os portugueses colonizadores.", "Os bandeirantes paulistas."] },
+    { p: "[D1] O pau-brasil foi a primeira riqueza explorada pelos portugueses em nosso país, sendo usado para tingir tecidos de vermelho na Europa. Para que a árvore era usada?", r: "Para tingir tecidos de vermelho.", erradas: ["Para construir navios.", "Para fazer remédios.", "Para alimentar gado."] },
+    { p: "[D1] O Pantanal sofre alagamentos anuais durante o verão, transformando a região numa imensa planície de água doce. Quando ocorrem os alagamentos?", r: "Durante o verão.", erradas: ["No inverno rigoroso.", "Durante a primavera.", "No outono."] },
+    { p: "[D1] Zumbi dos Palmares foi o último líder do Quilombo dos Palmares, localizado na Serra da Barriga, estado de Alagoas. Em qual estado ficava o quilombo?", r: "Estado de Alagoas.", erradas: ["Estado da Bahia.", "Estado de Pernambuco.", "Estado de Minas Gerais."] },
+    { p: "[D1] O mico-leão-dourado é um pequeno macaco nativo da Mata Atlântica do estado do Rio de Janeiro. De qual bioma ele é nativo?", r: "Da Mata Atlântica.", erradas: ["Do Cerrado.", "Da Floresta Amazônica.", "Dos Pampas gaúchos."] },
+    { p: "[D1] A feijoada brasileira, prato tradicional que leva feijão preto e carnes de porco, é geralmente servida com arroz, farofa e couve. Com o que ela é servida?", r: "Com arroz, farofa e couve.", erradas: ["Com macarrão e batata frita.", "Com purê de batata.", "Com peixe frito."] },
+    { p: "[D1] O boto-cor-de-rosa vive nas águas doces da Bacia Amazônica e faz parte do folclore da região Norte. Onde vive o boto-cor-de-rosa?", r: "Nas águas doces da Bacia Amazônica.", erradas: ["Nas praias do Nordeste.", "Nos rios do Sul do Brasil.", "Em lagos artificiais."] },
+    { p: "[D1] O ciclo da água na natureza garante a formação de chuvas, que abastecem os reservatórios das hidrelétricas do Brasil. O que as chuvas abastecem?", r: "Os reservatórios das hidrelétricas.", erradas: ["Os oceanos do interior.", "Apenas as pequenas plantações.", "As ruas das cidades."] },
+
+    // --- D3: Inferir o sentido de uma palavra ou expressão ---
+    { p: "[D3] O bandeirante foi *intrépido* ao desbravar as densas matas do Brasil colonial sem medo dos perigos. 'Intrépido' significa:", r: "Corajoso e destemido.", erradas: ["Assustado e tímido.", "Cansado e lento.", "Curioso e falante."] },
+    { p: "[D3] A seca severa no Nordeste deixou o solo *árido*, dificultando o plantio de milho e feijão. A palavra 'árido' indica:", r: "Seco, sem umidade e estéril.", erradas: ["Frio e congelado.", "Muito chuvoso e alagado.", "Verde e fértil."] },
+    { p: "[D3] A construção da usina hidrelétrica de Itaipu foi uma obra *colossal* que envolveu milhares de trabalhadores. O termo 'colossal' quer dizer:", r: "Gigantesca, imensa.", erradas: ["Pequena, sem importância.", "Rápida, feita num dia.", "Invisível, escondida."] },
+    { p: "[D3] A resposta do Imperador a Portugal foi *irrevogável*: ele decidiu ficar no Brasil e declarar a independência. 'Irrevogável' significa:", r: "Que não pode ser desfeita ou mudada.", erradas: ["Que era uma brincadeira.", "Que ainda seria discutida.", "Injusta e maldosa."] },
+    { p: "[D3] O calor em Teresina no mês de outubro costuma ser *sufocante*, exigindo hidratação constante. 'Sufocante' significa:", r: "Apertado, que causa falta de ar pelo calor.", erradas: ["Agradável, ventoso.", "Muito gelado.", "Escuro e perigoso."] },
+    { p: "[D3] O Saci-Pererê é famoso pelas suas travessuras e por ser muito *sagaz* ao fugir das armadilhas dos caçadores. 'Sagaz' quer dizer:", r: "Esperto, inteligente e ágil.", erradas: ["Lento e preguiçoso.", "Triste e solitário.", "Forte, que usa apenas os músculos."] },
+    { p: "[D3] O aluno *hesitou* por um momento ao responder à questão sobre o ciclo da água no teste do SARESP. 'Hesitou' significa:", r: "Teve dúvidas, parou por um instante.", erradas: ["Respondeu rapidamente gritando.", "Desistiu de fazer a prova.", "Começou a chorar."] },
+    { p: "[D3] A floresta Amazônica é *vasta*, cobrindo vários estados do Brasil e países vizinhos. A palavra 'vasta' indica:", r: "Muito grande, extensa e ampla.", erradas: ["Pequenininha, estreita.", "Seca e sem árvores.", "Localizada apenas no litoral."] },
+    { p: "[D3] A vitória da seleção brasileira na final da Copa do Mundo foi *iminente* após o segundo gol aos 40 do segundo tempo. 'Iminente' significa:", r: "Prestes a acontecer, muito próxima.", erradas: ["Impossível de ocorrer.", "Cancelada pelo juiz.", "Aborrecida e triste."] },
+    { p: "[D3] A névoa na Serra da Mantiqueira estava tão *densa* que os carros tiveram que parar no acostamento. 'Densa' quer dizer:", r: "Espessa, fechada e concentrada.", erradas: ["Rala, fina e transparente.", "Quente, queimando tudo.", "Iluminada e brilhante."] },
+    { p: "[D3] A dor da picada do mosquito marimbondo foi *incessante*, durando toda a tarde de pescaria. 'Incessante' significa:", r: "Contínua, que não para.", erradas: ["Suave, fraca.", "Passageira, curta.", "Engraçada, que dá cócegas."] },
+    { p: "[D3] O esforço de tentar plantar trigo na areia da praia foi em *vão*. A expressão 'em vão' significa:", r: "Inútil, sem sucesso ou resultado.", erradas: ["Vitorioso, que deu certo.", "Doloroso, que machucou.", "Rápido e fácil."] },
+    { p: "[D3] As paisagens dos Lençóis Maranhenses após as chuvas são *deslumbrantes*, parecendo grandes lençóis brancos. 'Deslumbrantes' quer dizer:", r: "Maravilhosas e belíssimas.", erradas: ["Feias e assustadoras.", "Comuns e monótonas.", "Secas e mortas."] },
+    { p: "[D3] Dom Pedro II herdou o trono do Império brasileiro de forma *nata*, por direito de nascimento. A palavra 'nata' indica:", r: "De nascença, natural e inerente.", erradas: ["Comprado com ouro.", "Conquistado numa guerra.", "Falso, de mentira."] },
+    { p: "[D3] O comportamento do cão pastor com a ovelha perdida foi *hostil*, mostrando os dentes e latindo. 'Hostil' significa:", r: "Agressivo, ameaçador ou inimigo.", erradas: ["Amigável e protetor.", "Calmo e sonolento.", "Brincalhão e feliz."] },
+    { p: "[D3] A garota era muito *loquaz*, conversando durante toda a viagem de ônibus até Salvador. 'Loquaz' significa:", r: "Falante, comunicativa, que fala muito.", erradas: ["Calada, silenciosa.", "Zangada, furiosa.", "Dorminhoca, cansada."] },
+    { p: "[D3] A chuva no início de março foi *efêmera*, molhando o chão por cinco minutos e desaparecendo. 'Efêmera' indica:", r: "Passageira, de curtíssima duração.", erradas: ["Eterna, que não acaba.", "Forte e destrutiva.", "Escaldante, muito quente."] },
+    { p: "[D3] As regras da escola são *severas* quanto ao uso do celular em sala de aula durante a prova. 'Severas' significa:", r: "Rígidas, duras e rigorosas.", erradas: ["Flexíveis, muito livres.", "Cômicas e engraçadas.", "Sem importância."] },
+    { p: "[D3] A água do Ribeirão dos Meninos estava tão *turva* por causa do barro que não dava para ver o fundo. 'Turva' significa:", r: "Suja, sem transparência.", erradas: ["Cristalina, muito limpa.", "Congelada, muito fria.", "Muito salgada."] },
+    { p: "[D3] O detetive encontrou na cena do crime uma pista *crucial* que desvendou todo o mistério. 'Crucial' quer dizer:", r: "Decisiva, muito importante.", erradas: ["Desnecessária, inútil.", "Falsa, mentirosa.", "Antiga, ultrapassada."] },
+
+    // --- D4: Inferir uma informação implícita ---
+    { p: "[D4] O menino vestiu camisa xadrez, fez um bigode com lápis de olho, colocou o chapéu de palha e correu para a escola. Para onde ele vai?", r: "Para uma Festa Junina.", erradas: ["Para a praia em Copacabana.", "Para o desfile de Carnaval.", "Para dormir em casa."] },
+    { p: "[D4] A terra do sertão rachava sob os pés. O gado estava magro e os açudes não tinham uma gota de água há meses. O que atinge a região?", r: "Uma forte seca (estiagem).", erradas: ["Uma enchente devastadora.", "Um período de neve e frio.", "Um furacão tropical."] },
+    { p: "[D4] A mãe encheu a panela de pressão com feijão preto, linguiça, carne-seca e orelha de porco para o almoço de sábado. O que ela vai cozinhar?", r: "Vai preparar uma feijoada.", erradas: ["Vai fazer um bolo de chocolate.", "Vai cozinhar uma moqueca de peixe.", "Vai fazer sopa de legumes."] },
+    { p: "[D4] Ele colocou a camisa verde e amarela, pegou a vuvuzela e sentou-se nervoso na frente da televisão com os amigos. Para que ele se prepara?", r: "Para assistir a um jogo do Brasil.", erradas: ["Para ver o jornal da noite.", "Para cozinhar o jantar.", "Para fazer uma prova escolar."] },
+    { p: "[D4] As arquibancadas do Sambódromo tremiam, havia muita cor, plumas, passistas e o som forte da bateria da escola de samba. O que está acontecendo?", r: "Um desfile de Carnaval.", erradas: ["Uma procissão religiosa.", "Uma partida de futebol.", "Uma festa de aniversário."] },
+    { p: "[D4] O céu escureceu rapidamente às três da tarde em São Paulo, o vento levou as folhas e ouviram-se fortes trovões. O que vai acontecer?", r: "Uma forte tempestade ou chuva.", erradas: ["O sol vai nascer brilhante.", "Vai começar a nevar na cidade.", "O clima vai ficar muito seco."] },
+    { p: "[D4] Marina pegou sua prancha, passou protetor solar e correu para as águas salgadas de Maresias. Onde a Marina está?", r: "Na praia.", erradas: ["No topo de uma montanha.", "No meio do deserto.", "Em uma piscina fechada."] },
+    { p: "[D4] Ele amarrou a fita do Senhor do Bonfim no pulso, deu três nós e fechou os olhos com força. O que ele está fazendo?", r: "Fazendo três pedidos (tradição baiana).", erradas: ["Tentando prender a circulação.", "Tirando as medidas do braço.", "Preparando-se para lutar boxe."] },
+    { p: "[D4] O motorista olhou para o painel na Rodovia Dutra, bateu no volante com raiva ao ver a luz vermelha no símbolo da bomba acender e o carro falhar. O que houve?", r: "O carro ficou sem combustível.", erradas: ["O pneu do carro estourou.", "Levou uma multa do radar.", "Bateu no carro da frente."] },
+    { p: "[D4] O pinguinho d'água caiu da nuvem, escorreu pela folha da Amazônia e infiltrou-se na terra até chegar à raiz da árvore. O texto descreve o início de qual processo?", r: "Do ciclo da água e da chuva.", erradas: ["Da seca no Nordeste.", "Do desmatamento da floresta.", "Da fabricação de rios."] },
+    { p: "[D4] A torcida do Flamengo ficou em silêncio absoluto. O jogador cobrou o pênalti, a bola passou longe da trave e o juiz apitou o fim do campeonato. O que houve?", r: "O Flamengo perdeu ou foi eliminado.", erradas: ["O Flamengo foi o grande campeão.", "Foi um gol incrível de bicicleta.", "O jogo vai ter que ser reiniciado."] },
+    { p: "[D4] A menina abriu o caderno, olhou os números das frações, coçou a cabeça, roeu o lápis e suspirou cansada. Como ela se sente?", r: "Com dificuldades ou dúvidas na matéria.", erradas: ["Feliz e entendendo tudo perfeitamente.", "Com sono porque não dormiu.", "Com muita fome e sede."] },
+    { p: "[D4] A sirene tocou. Os alunos guardaram os livros correndo, pegaram as lancheiras e correram para o pátio da escola rindo. O que aconteceu?", r: "Bateu o sinal para a hora do recreio.", erradas: ["Acabou a energia na escola.", "Houve um incêndio no pátio.", "O professor passou uma prova surpresa."] },
+    { p: "[D4] O fiscal observou a poça de água limpa esquecida num pneu velho no quintal, anotou na prancheta e virou o pneu. O que ele queria evitar?", r: "A reprodução do mosquito da dengue.", erradas: ["Que as crianças bebessem a água.", "Que o pneu sujasse o quintal.", "A reprodução de pássaros nativos."] },
+    { p: "[D4] A temperatura chegou aos 39 graus no Rio de Janeiro. As pessoas formaram filas imensas nas sorveterias e nos quiosques de água de coco. Em que estação estão?", r: "No Verão.", erradas: ["No Inverno rigoroso.", "Na Primavera chuvosa.", "No Outono com ventos."] },
+    { p: "[D4] Apanhou o termômetro, viu o número 39°C no mostrador digital e mandou o filho pequeno voltar para a cama imediatamente. O que o filho tem?", r: "O filho está com febre.", erradas: ["O filho está sentindo calor do verão.", "O termômetro está com defeito.", "Ele quer que o filho durma mais."] },
+    { p: "[D4] Puxou a linha com força, a vara vergou, o molinete cantou e ele sorriu ao ver a escama prateada brilhar ao sair da água do rio Paraná. O que ele fez?", r: "Ele conseguiu pescar um peixe.", erradas: ["A linha enroscou numa pedra velha.", "A vara de pescar quebrou ao meio.", "Ele deixou a bota cair na água."] },
+    { p: "[D4] Encheu os pulmões, encostou a boca no instrumento brilhante de metal e apertou os três botões enquanto assoprava forte no desfile de 7 de setembro. O que ele faz?", r: "Toca um instrumento de sopro (trompete).", erradas: ["Bebe água de uma garrafa dourada.", "Limpa o instrumento sujo.", "Grita palavras de ordem para a tropa."] },
+    { p: "[D4] Desatou o nó do laço vermelho, rasgou o papel estampado com ursinhos e deu um grito de alegria ao ver a caixa. O que a criança fez?", r: "Abriu um presente de aniversário.", erradas: ["Fechou a mochila da escola.", "Rasgou uma carta que a deixou brava.", "Achou um animal peçonhento na rua."] },
+    { p: "[D4] Entrou no carro com listras nas laterais, olhou para a placa luminosa no teto e para o taxímetro marcando o valor e disse 'Para o aeroporto de Guarulhos'. Quem é ele?", r: "Um passageiro de táxi.", erradas: ["O piloto do avião.", "O motorista de ônibus escolar.", "Um guarda de trânsito em patrulha."] },
+
+    // --- D6: Identificar o tema de um texto ---
+    { p: "[D6] 'O desmatamento na Floresta Amazônica avançou rapidamente. Madeireiros ilegais e queimadas para pasto destroem o habitat de onças, macacos e aves raras.' Qual o tema?", r: "A destruição ambiental na Amazônia.", erradas: ["A exportação de móveis rústicos.", "A riqueza da culinária nortista.", "A lenda do boto-cor-de-rosa."] },
+    { p: "[D6] 'O ciclo da água na Terra é constante. O sol aquece os rios, a água evapora, forma nuvens densas e depois cai em formato de chuva, voltando à terra.' Qual o tema?", r: "O processo natural do ciclo da água.", erradas: ["O aquecimento global dos oceanos.", "O tratamento do esgoto nas cidades.", "Como purificar a água barrenta."] },
+    { p: "[D6] 'A Proclamação da Independência do Brasil ocorreu em 7 de setembro de 1822. Dom Pedro I, às margens do Ipiranga, rompeu os laços políticos com Portugal.' O tema é:", r: "O evento histórico da Independência do Brasil.", erradas: ["A descoberta do Brasil por Cabral.", "A fundação da cidade de São Paulo.", "As guerras da República Velha."] },
+    { p: "[D6] 'A vacina contra a dengue, aprovada recentemente no Brasil, utiliza o vírus atenuado para ensinar o sistema imunológico a se defender caso o mosquito pique a pessoa.' O tema é:", r: "A prevenção da dengue através da vacinação.", erradas: ["Como criar mosquitos em casa.", "O tratamento dos rios poluídos.", "A história da criação dos vírus."] },
+    { p: "[D6] 'Lave as mãos. Misture numa tigela 500g de polvilho doce, queijo minas ralado, ovos e óleo. Asse até dourar e sirva quente com café.' Qual é o tema do texto?", r: "O preparo de uma receita de pão de queijo.", erradas: ["A importância de tomar café da manhã.", "Como produzir queijo numa fazenda.", "A história do estado de Minas Gerais."] },
+    { p: "[D6] 'A escravidão no Brasil durou mais de 300 anos, trazendo milhões de africanos à força para trabalhar nos engenhos de açúcar e minas de ouro.' O tema central é:", r: "A história do trabalho escravo no Brasil.", erradas: ["A culinária africana no nordeste.", "Como plantar cana-de-açúcar.", "O comércio de joias de ouro."] },
+    { p: "[D6] 'O futebol é uma paixão nacional brasileira. Desde os tempos de Pelé, as crianças brincam nas ruas sonhando em vestir a camisa da seleção e ganhar uma Copa.' O tema é:", r: "A importância do futebol na cultura brasileira.", erradas: ["As regras de arbitragem no esporte.", "A fabricação de bolas de couro.", "Os estádios fechados em São Paulo."] },
+    { p: "[D6] 'A reciclagem do lixo (plástico, vidro e papel) nas escolas reduz o impacto em aterros sanitários e ajuda a salvar a vida marinha no litoral brasileiro.' Qual o tema?", r: "A importância da reciclagem para o meio ambiente.", erradas: ["Como recolher lixo na praia.", "A produção de plástico nas indústrias.", "O fechamento das escolas públicas."] },
+    { p: "[D6] 'O folclore brasileiro é rico. Personagens como o Saci de uma perna só, o Curupira de pés virados e a mula sem cabeça habitam o imaginário das nossas matas.' O tema é:", r: "As lendas e personagens do folclore do Brasil.", erradas: ["A biologia dos animais selvagens da mata.", "Histórias reais que aconteceram nas fazendas.", "Como caçar monstros na floresta escura."] },
+    { p: "[D6] 'Júpiter é o maior planeta do nosso sistema solar. É um gigante gasoso conhecido pela sua Grande Mancha Vermelha, uma tempestade que dura centenas de anos.' Qual o tema?", r: "As características do planeta Júpiter em astronomia.", erradas: ["As viagens de foguetes para fora da Terra.", "O aquecimento global no universo.", "O formato das estrelas no céu noturno."] },
+    { p: "[D6] 'Os celulares modernos têm telas touch screen, câmeras potentes e acesso à internet. Eles revolucionaram como as pessoas se comunicam a distância.' O tema é:", r: "A evolução da tecnologia de comunicação.", erradas: ["O conserto de aparelhos quebrados.", "As aulas de robótica na escola.", "O custo da energia elétrica hoje."] },
+    { p: "[D6] 'Escovar os dentes, passar fio dental e ir ao dentista regularmente são ações necessárias para evitar a cárie, que destrói o esmalte dentário com dor.' O tema é:", r: "A higiene bucal e prevenção de cáries.", erradas: ["Como extrair um dente em casa.", "O formato dos dentes humanos.", "Receitas de pastas de dente antigas."] },
+    { p: "[D6] 'A inconfidência Mineira foi uma revolta reprimida antes de acontecer. O plano era separar Minas Gerais de Portugal, e Tiradentes foi o seu maior mártir.' O tema é:", r: "A história de uma revolta colonial no Brasil.", erradas: ["O processo de extração do ouro nas minas.", "A vida do rei de Portugal na Europa.", "A geografia das cidades mineiras atuais."] },
+    { p: "[D6] 'O Cerrado brasileiro é conhecido como a caixa d'água do país, pois ali nascem importantes rios. É caracterizado por árvores de troncos retorcidos.' O tema é:", r: "As características geográficas do bioma Cerrado.", erradas: ["A falta de água no nordeste brasileiro.", "O reflorestamento da Amazônia.", "A lenda dos rios subterrâneos mágicos."] },
+    { p: "[D6] 'A vitamina C, encontrada em frutas como a laranja e o caju, é vital para fortalecer nosso sistema imunológico e prevenir gripes fortes e resfriados.' O tema é:", r: "Os benefícios da Vitamina C para a saúde.", erradas: ["Como plantar laranjeiras em casa.", "A exportação de frutas brasileiras.", "Receitas de sucos gelados para o verão."] },
+    { p: "[D6] 'Era uma vez um curumim muito corajoso que protegia as tribos dos maus espíritos da floresta, usando apenas seu arco e flecha.' Qual o tema?", r: "Uma lenda indígena, um conto de fantasia.", erradas: ["A história do Brasil Império real.", "Como fabricar um arco de madeira.", "Notícias de invasões em terras indígenas."] },
+    { p: "[D6] 'As abelhas são vitais. Ao pousarem nas flores em busca de néctar, o pólen gruda em seus corpos e é levado para outras plantas, garantindo a polinização.' O tema é:", r: "O papel ambiental das abelhas na polinização.", erradas: ["O processo de fabricação do mel doce.", "Como evitar alergias a picadas perigosas.", "O tamanho das colmeias nas fazendas."] },
+    { p: "[D6] 'Zumbi dos Palmares resistiu até 1695 contra as forças portuguesas. O seu quilombo foi o maior refúgio de escravizados que fugiam da opressão no Brasil.' O tema é:", r: "A resistência negra e a história do Quilombo dos Palmares.", erradas: ["A construção de navios negreiros em Portugal.", "Como plantar e colher nas serras alagoanas.", "Histórias de ficção científica em Palmares."] },
+    { p: "[D6] 'Dormir de 8 a 9 horas por noite na infância melhora a memória, ajuda no crescimento e evita problemas de humor durante o horário escolar.' O tema é:", r: "A importância e os benefícios do sono para as crianças.", erradas: ["O formato das camas infantis nas lojas.", "O aumento das mensalidades das escolas.", "Sonhos com aventuras e magia na noite."] },
+    { p: "[D6] 'O Brasil tem a maior frota de carros flex do mundo. Esse sistema permite que o carro funcione com gasolina ou etanol (feito da cana-de-açúcar).' O tema é:", r: "A tecnologia dos motores flex no Brasil.", erradas: ["Como consertar um pneu furado na rua.", "O processo de plantio do milho doce.", "As leis de limite de velocidade nas estradas."] },
+
+    // --- D11: Distinguir fato de opinião ---
+    { p: "[D11] 'O filme do Capitão América estreou nos cinemas ontem. Para mim, foi a história de ação mais entediante de todas.' Qual trecho expressa uma OPINIÃO?", r: "Foi a história de ação mais entediante de todas.", erradas: ["O filme estreou nos cinemas ontem.", "O filme é do Capitão América.", "O filme esteve nos cinemas."] },
+    { p: "[D11] 'Brasília é a atual capital do Brasil. Sinceramente, acho que a arquitetura da cidade é muito esquisita e fria.' Qual é a OPINIÃO?", r: "Acho que a arquitetura da cidade é muito esquisita.", erradas: ["Brasília é a atual capital do Brasil.", "Brasília é uma cidade.", "O Brasil tem uma capital."] },
+    { p: "[D11] 'O pão de queijo leva polvilho azedo na sua massa. Na minha opinião, é o melhor lanche da tarde que existe.' Qual trecho marca o FATO?", r: "O pão de queijo leva polvilho azedo.", erradas: ["É o melhor lanche da tarde que existe.", "Nenhum outro lanche é tão bom.", "O pão de queijo é maravilhoso."] },
+    { p: "[D11] Qual alternativa apresenta apenas um FATO comprovável, e não uma opinião pessoal?", r: "A água do mar é salgada e contém cloreto de sódio.", erradas: ["Ir à praia é muito mais legal do que ir à piscina.", "Gatos são os melhores animais de estimação de todos.", "Estudar matemática é a coisa mais chata do mundo."] },
+    { p: "[D11] 'A seleção brasileira de futebol ganhou cinco Copas do Mundo. Considero essa seleção a melhor da história mundial.' Qual é o FATO?", r: "A seleção brasileira ganhou cinco Copas do Mundo.", erradas: ["Considero essa seleção a melhor da história.", "Nenhum time joga tão bonito.", "A Copa do Mundo é muito emocionante."] },
+    { p: "[D11] 'A temperatura em Salvador chegou aos 35°C na sexta-feira. Foi o dia mais infernal e aborrecido das minhas férias.' Qual a OPINIÃO?", r: "Foi o dia mais infernal e aborrecido das férias.", erradas: ["A temperatura chegou aos 35°C na sexta.", "Fez calor em Salvador na sexta.", "Ocorreu na cidade de Salvador."] },
+    { p: "[D11] 'Machado de Assis publicou o livro Memórias Póstumas em 1881. Creio que seja a maior obra de arte já escrita em português.' Qual é a OPINIÃO?", r: "Creio que seja a maior obra de arte já escrita.", erradas: ["Machado de Assis publicou o livro em 1881.", "O livro chama-se Memórias Póstumas.", "O autor publicou um livro."] },
+    { p: "[D11] 'O Museu do Amanhã fica no Rio de Janeiro e abre às terças. Acredito que não vale a pena pagar o ingresso para entrar lá.' Qual é o FATO?", r: "O Museu do Amanhã fica no Rio de Janeiro e abre às terças.", erradas: ["Acredito que não vale a pena pagar o ingresso.", "O museu é muito chato por dentro.", "É perda de tempo ir a esse museu."] },
+    { p: "[D11] 'O lobo-guará tem pernas finas e longas para andar no cerrado. Acho-o o bicho mais lindo e gracioso de toda a fauna nacional.' Qual é a OPINIÃO?", r: "Acho-o o bicho mais lindo e gracioso da fauna.", erradas: ["O lobo-guará tem pernas finas e longas.", "O lobo anda no bioma do cerrado.", "O animal possui pernas finas."] },
+    { p: "[D11] 'O jogador cobrou o pênalti e fez o gol da vitória. Na minha visão, foi um lance de pura sorte e incompetência do goleiro.' Qual o FATO?", r: "O jogador cobrou o pênalti e fez o gol.", erradas: ["Na minha visão, foi um lance de pura sorte.", "Houve incompetência do goleiro.", "O lance não teve técnica nenhuma."] },
+    { p: "[D11] 'A nova novela da televisão passa às nove da noite. Sinceramente, a história é muito arrastada e cheia de clichês chatos.' Qual é o FATO?", r: "A nova novela da televisão passa às nove da noite.", erradas: ["A história é muito arrastada e chata.", "A novela é cheia de clichês.", "Os personagens são ruins."] },
+    { p: "[D11] 'O computador da biblioteca tem 8 gigabytes de memória. Penso que essa máquina é lenta demais para as nossas pesquisas.' Qual a OPINIÃO?", r: "Penso que essa máquina é lenta demais para pesquisas.", erradas: ["O computador da biblioteca tem 8 gigabytes.", "A memória da máquina é de 8 gigas.", "O computador fica na biblioteca."] },
+    { p: "[D11] 'Choveu em São Paulo por três dias seguidos em janeiro. Isso arruinou completamente o meu passeio e foi péssimo.' Qual a OPINIÃO?", r: "Isso arruinou o meu passeio e foi péssimo.", erradas: ["Choveu em São Paulo por três dias seguidos.", "A chuva aconteceu no mês de janeiro.", "Houve chuva durante três dias."] },
+    { p: "[D11] 'A passagem de ônibus aumentou para 5 reais no mês passado. É um verdadeiro assalto e um desrespeito com a população!' Qual é o FATO?", r: "A passagem de ônibus aumentou para 5 reais.", erradas: ["É um verdadeiro assalto contra a população.", "É um grande desrespeito.", "O valor é absurdamente caro."] },
+    { p: "[D11] 'O exame do SARESP possui questões de múltipla escolha de português e matemática. Tenho a certeza de que a prova de matemática será cruel.' Qual é a OPINIÃO?", r: "Tenho a certeza de que a prova será cruel.", erradas: ["O exame possui questões de múltipla escolha.", "A prova avalia português e matemática.", "O SARESP é um exame."] },
+    { p: "[D11] 'O cachorro tem quatro patas, focinho e orelhas. É o ser mais fiel e adorável que uma pessoa pode ter na vida.' Qual é o FATO?", r: "O cachorro tem quatro patas, focinho e orelhas.", erradas: ["É o ser mais fiel que uma pessoa pode ter.", "É muito adorável e fofo.", "Toda a gente devia ter um cachorro."] },
+    { p: "[D11] 'O celular custou dois mil reais na loja do centro. Acho que foi um negócio terrível e dinheiro jogado no lixo.' Qual é o FATO?", r: "O celular custou dois mil reais na loja do centro.", erradas: ["Acho que foi um negócio terrível.", "Foi dinheiro jogado no lixo.", "Ele não devia ter comprado."] },
+    { p: "[D11] 'A Floresta Amazônica perdeu 10% de suas árvores. É muito triste e desesperador ver a natureza sumindo dessa forma.' Qual a OPINIÃO?", r: "É muito triste e desesperador ver a natureza sumindo.", erradas: ["A Floresta Amazônica perdeu 10% de suas árvores.", "A área teve árvores cortadas.", "As árvores foram retiradas."] },
+    { p: "[D11] 'A moqueca capixaba leva azeite de dendê na receita original. Na minha opinião, ela é muito melhor do que a moqueca baiana.' Qual a OPINIÃO?", r: "Na minha opinião, ela é muito melhor do que a baiana.", erradas: ["A moqueca capixaba leva azeite de dendê.", "O prato usa azeite de dendê.", "Existe uma receita de moqueca capixaba."] },
+    { p: "[D11] 'O avião partiu do aeroporto com duas horas de atraso. A companhia aérea presta o pior serviço de todo o Brasil.' Qual é o FATO?", r: "O avião partiu do aeroporto com duas horas de atraso.", erradas: ["A companhia aérea presta o pior serviço.", "O atendimento é péssimo.", "As comissárias são mal-educadas."] },
+
+    // --- D13: Finalidade dos textos ---
+    { p: "[D13] Um panfleto do posto de saúde com o título 'Dicas para combater o Aedes aegypti', cheio de imagens de pneus sem água, serve principalmente para:", r: "Informar e alertar a população sobre como prevenir a dengue.", erradas: ["Fazer propaganda para vender inseticida.", "Contar a história das doenças em São Paulo.", "Ensinar a fabricar repelentes em casa."] },
+    { p: "[D13] Uma receita de 'Bolo de Milho Verde', com a lista de ingredientes e os passos numéricos de como bater no liquidificador, tem como finalidade:", r: "Instruir ou ensinar alguém a preparar um alimento.", erradas: ["Contar uma lenda sobre a origem do milho.", "Convencer o leitor a comprar farinha no mercado.", "Convidar pessoas para uma festa na roça."] },
+    { p: "[D13] Um cartão colorido recebido na escola que diz: 'Venha pular fogueira no meu arraiá! Dia 24/06 às 18h no pátio. Traga uma prenda!' tem como objetivo:", r: "Fazer um convite para um evento festivo.", erradas: ["Dar uma notícia triste sobre um incêndio.", "Ensinar a montar uma fogueira segura.", "Exigir o pagamento de uma dívida."] },
+    { p: "[D13] A manchete de capa de um jornal que diz 'Forte chuva alaga avenidas de São Paulo e paralisa o trânsito nesta terça' serve para:", r: "Relatar um fato ou informar a população sobre um acontecimento.", erradas: ["Divertir o leitor com uma piada paulista.", "Convencer as pessoas a comprarem carros altos.", "Convidar para um passeio de barco na avenida."] },
+    { p: "[D13] O folheto que vem dentro da caixa de um remédio de farmácia (a bula), listando os efeitos colaterais e a dosagem em miligramas, serve para:", r: "Orientar o paciente sobre como tomar a medicação corretamente.", erradas: ["Vender o remédio na televisão para o público.", "Contar a biografia do cientista que criou o remédio.", "Assustar as crianças com palavras difíceis."] },
+    { p: "[D13] Uma propaganda de televisão que diz 'Compre o Tênis Mola-Mola! O único que faz você pular 2 metros. Acesse o site e garanta o seu com desconto!' serve para:", r: "Convencer o espectador a consumir ou comprar o produto.", erradas: ["Ensinar as crianças a correrem mais rápido.", "Contar a história das fábricas de calçados.", "Explicar como as molas de ferro funcionam."] },
+    { p: "[D13] Uma Fábula tradicional, como a da 'Lebre e a Formiga', onde os animais falam e há uma frase final de reflexão, tem como propósito principal:", r: "Transmitir um ensinamento ou lição de moral ao leitor.", erradas: ["Informar a biologia e as características das formigas.", "Avisar sobre o tempo frio que vai chegar.", "Vender veneno contra insetos."] },
+    { p: "[D13] O rótulo na parte de trás de uma lata de refrigerante, que lista as quantidades de açúcar, sódio e calorias, tem como objetivo:", r: "Informar os valores nutricionais e composição do produto.", erradas: ["Ensinar a fabricar refrigerante gaseificado em casa.", "Avisar sobre as regras de trânsito.", "Contar uma piada para o cliente rir enquanto bebe."] },
+    { p: "[D13] Um guia turístico da cidade do Rio de Janeiro, contendo o mapa do Cristo Redentor e as linhas do bondinho, serve para:", r: "Orientar e informar o visitante sobre os pontos do local.", erradas: ["Denunciar os crimes e problemas de segurança da cidade.", "Convencer as pessoas a não viajarem para lá.", "Ensinar geografia do Brasil colonial."] },
+    { p: "[D13] Um bilhete colado na porta da geladeira que diz: 'Mãe, fui jogar bola na casa do Pedro. Volto às 18h. Beijo, Lucas.' tem a finalidade de:", r: "Deixar um aviso curto e rápido para um familiar.", erradas: ["Narrar uma aventura longa e detalhada sobre futebol.", "Convidar a mãe para jogar bola na casa do Pedro.", "Reclamar de um defeito na geladeira."] },
+    { p: "[D13] Uma tira de história em quadrinhos da 'Turma da Mônica' ou do 'Menino Maluquinho' nos jornais de domingo serve essencialmente para:", r: "Entreter e divertir o leitor com humor ou ironia.", erradas: ["Informar notícias urgentes e trágicas do governo.", "Ensinar a desenhar personagens cabeçudos.", "Vender revistas em quadrinhos na padaria."] },
+    { p: "[D13] A placa de trânsito em formato de triângulo invertido escrito 'DÊ A PREFERÊNCIA' pintada antes de um cruzamento serve para:", r: "Regular o trânsito e ordenar o comportamento dos motoristas.", erradas: ["Vender carros vermelhos com triângulos.", "Decorar a estrada para não ficar cinza e monótona.", "Avisar que há restaurantes na esquina."] },
+    { p: "[D13] Uma carta formal enviada ao diretor da escola pedindo o conserto das lâmpadas das salas de aula serve para:", r: "Fazer uma reivindicação, pedido formal ou reclamação.", erradas: ["Convidar o diretor para uma festa no escuro.", "Explicar como se troca a resistência de uma lâmpada.", "Contar a história das escolas antigas do bairro."] },
+    { p: "[D13] A sinopse na contracapa de um livro de aventuras, que conta um pouco da história do herói sem revelar o final misterioso, serve para:", r: "Despertar o interesse e a curiosidade do leitor pelo livro.", erradas: ["Ensinar o leitor a escrever um bom livro de suspense.", "Contar o final para que o leitor não precise ler o livro.", "Criticar os erros gramaticais do próprio autor do livro."] },
+    { p: "[D13] O manual de instruções que vem na caixa do celular novo, mostrando onde fica o botão de volume e onde conectar o carregador, serve para:", r: "Orientar sobre o funcionamento e o manuseio do aparelho.", erradas: ["Fazer propaganda para vender o celular a outras pessoas.", "Explicar como os engenheiros da fábrica fizeram o plástico.", "Divertir o cliente com histórias curtas."] },
+    { p: "[D13] Um cartaz colado no poste com a foto de um gato poodle e a frase 'PROCURA-SE. Perdeu-se na Rua 15. Recompensa-se bem. Tel: 9999-9999' tem como finalidade:", r: "Pedir ajuda da comunidade para encontrar um animal perdido.", erradas: ["Ensinar a população a cuidar de cães poodles.", "Vender um animal por um preço muito alto.", "Informar sobre uma nova campanha de vacinação."] },
+    { p: "[D13] O 'Boletim Meteorológico' apresentado pela jornalista na televisão, mostrando nuvens sobre o Sul e sois sobre o Nordeste, serve para:", r: "Informar a previsão climática para os próximos dias.", erradas: ["Divertir as crianças com mapas cheios de desenhos.", "Vender pacotes de viagens e de férias no Nordeste.", "Convencer as pessoas a não saírem das suas casas."] },
+    { p: "[D13] Um diário pessoal, escrito em um caderno com cadeado, onde a adolescente relata seus medos e os acontecimentos do dia escolar, serve para:", r: "Registrar memórias, desabafos e sentimentos pessoais.", erradas: ["Ser lido em voz alta pelo professor para toda a turma.", "Ser publicado no maior jornal do estado amanhã.", "Fazer um trabalho de escola que vale nota."] },
+    { p: "[D13] O dicionário da língua portuguesa da escola, onde procuramos palavras organizadas de A a Z, serve para:", r: "Esclarecer o significado e a escrita correta das palavras.", erradas: ["Contar histórias engraçadas que envolvem as letras.", "Ajudar a somar e a dividir números complexos.", "Criticar a forma como os jovens falam na internet."] },
+    { p: "[D13] Uma 'Biografia' escrita sobre a vida de Ayrton Senna, relatando sua infância, as vitórias e os desafios nas corridas, serve para:", r: "Relatar os principais acontecimentos da vida da pessoa.", erradas: ["Apenas vender os carros que Ayrton Senna usava.", "Ensinar os leitores a dirigirem na Fórmula 1.", "Criticar os pilotos de corrida adversários."] },
+
+    // --- D14: Efeito de sentido do uso da pontuação ---
+    { p: "[D14] No trecho: 'Um barulho estranho veio da cozinha escura... passos lentos arrastando-se... e a porta rangeu!' As reticências indicam:", r: "Suspense, mistério ou tensão narrativa.", erradas: ["O fim total e absoluto do capítulo da história.", "Muita alegria e a entrada de palhaços.", "Uma pergunta que aguarda a resposta do leitor."] },
+    { p: "[D14] Em 'Não acredito! Nós fomos sorteados para a viagem ao Pantanal?!' A junção da exclamação com a interrogação (!?) revela:", r: "Muita surpresa misturada com um questionamento e dúvida.", erradas: ["Uma afirmação calma, pacífica e sem nenhuma emoção.", "Uma longa pausa para recuperar o fôlego da corrida.", "Tristeza profunda e choro contínuo da personagem."] },
+    { p: "[D14] 'PARE DE JOGAR BOLA NA SALA AGORA!', gritou o avô assustando o neto. O uso de letras maiúsculas somado ao ponto de exclamação sugere:", r: "Voz muito alta, um grito forte ou uma ordem autoritária.", erradas: ["Uma fala mansa, calma e muito carinhosa do avô.", "Um sussurro ou um segredo contado ao pé do ouvido.", "Um erro de escrita que a gráfica deixou passar no livro."] },
+    { p: "[D14] Na frase 'Aquele político é um \"santo\" mesmo, roubou verba até da escola pública', as aspas na palavra \"santo\" indicam:", r: "Ironia, mostrando que o autor pensa exatamente o contrário da palavra.", erradas: ["Citação exata de um texto religioso famoso da antiguidade.", "Um destaque pelo fato da palavra estar numa língua estrangeira.", "Uma afirmação séria de que o político é de fato uma pessoa bondosa."] },
+    { p: "[D14] O caipira perguntou, tirando o chapéu:\n— Onde fica a rodoviária, moço?\nO travessão (—) na linha de baixo serve para:", r: "Indicar visualmente o início da fala direta da personagem.", erradas: ["Mostrar que a personagem está muito zangada e impaciente.", "Fazer uma pausa muito longa antes de começar a ler o texto.", "Substituir o uso de um ponto de exclamação de forma criativa."] },
+    { p: "[D14] 'A barraca de doces da festa junina vendia de tudo: paçoca, pé de moleque, cocada e maçã do amor.' O que os dois pontos (:) anunciam na frase?", r: "Apresentam uma lista ou uma enumeração lógica a seguir.", erradas: ["Mostram uma pergunta feita pelo dono da barraca ao cliente.", "Demonstram grande surpresa ao ver tantos doces estragados.", "Servem para encerrar o texto, pois não havia mais informações."] },
+    { p: "[D14] 'A seleção pentacampeã (que muitos diziam estar fraca) venceu a final com folga!' Os parênteses () nesse trecho servem para:", r: "Inserir um comentário secundário ou uma explicação extra.", erradas: ["Dar uma ordem imperativa aos jogadores em campo.", "Indicar profundo sarcasmo e falta de respeito com o time.", "Fazer uma interrogação que ninguém na arquibancada soube responder."] },
+    { p: "[D14] 'Eita! Que susto o trovão me deu!' O ponto de exclamação logo após a interjeição 'Eita' demonstra o efeito de:", r: "Forte sobressalto, emoção e susto repentino.", erradas: ["Profunda tranquilidade e muita calma para dormir.", "Uma dúvida científica ou curiosidade natural.", "O início de uma lista de objetos comprados no mercado."] },
+    { p: "[D14] 'Você prefere bolo de cenoura, pavê de chocolate ou mousse de maracujá?' A vírgula utilizada após a palavra cenoura serve para:", r: "Separar opções dentro de uma lista ou enumeração.", erradas: ["Demonstrar que a pessoa está a chorar muito de tristeza.", "Substituir o ponto de interrogação que não coube na frase.", "Ocultar o sabor do doce favorito da menina."] },
+    { p: "[D14] 'O goleiro escorregou! A bola desviou! É GOL! GOL!' O uso repetido de exclamações e frases curtas transmite um ritmo de:", r: "Ação rápida, agitação e intensidade extrema.", erradas: ["Paz, calma e tédio durante uma tarde de domingo.", "Lentidão e preguiça para realizar os movimentos de jogo.", "Pausas muito longas para refletir sobre a vida do goleiro."] },
+    { p: "[D14] 'A menina... eu não sei bem como dizer... ela pegou as chaves.' As reticências antes do 'ela' e depois da palavra 'menina' indicam:", r: "Uma hesitação constante, dúvida ou nervosismo na hora de falar.", erradas: ["Uma afirmação firme, absoluta e com toda a certeza do mundo.", "Um grito estridente que a menina deu de susto no corredor.", "O término formal e oficial do depoimento do livro de contos."] },
+    { p: "[D14] 'Zumbi dos Palmares, líder do quilombo, foi um grande guerreiro da liberdade.' As vírgulas isolando 'líder do quilombo' servem para:", r: "Explicar ou detalhar quem era o Zumbi dos Palmares (aposto explicativo).", erradas: ["Mostrar que o autor do texto estava sem ar e fez uma pausa para respirar.", "Indicar o exato momento em que o texto foi finalizado na máquina de escrever.", "Criar uma ironia amarga sobre as atitudes de Zumbi contra os Palmares."] },
+    { p: "[D14] 'Você vai ao museu do Ipiranga amanhã com a turma?' O ponto de interrogação no final da frase serve para marcar que a sentença é:", r: "Uma pergunta direta esperando uma resposta do colega.", erradas: ["Uma afirmação indiscutível e definitiva sobre o museu.", "Uma ordem severa dada pelo professor a todo o grupo.", "Um momento de riso ou choro exagerado durante o passeio."] },
+    { p: "[D14] 'Estava tão cansado, tão exausto após a caminhada na trilha... acabou dormindo na rede da varanda.' O uso de reticências indica:", r: "O prolongamento de uma sensação e a suspensão da ideia antes da ação.", erradas: ["Dúvida e um susto gigantesco ao ver um bicho na varanda e correr.", "Que a pessoa acordou de repente super animada para brincar mais na trilha.", "A proibição de continuar a ler o livro a partir daquele ponto exato."] },
+    { p: "[D14] '— Quem comeu toda a pipoca do balde? — esbravejou o menino revoltado.' O segundo travessão, antes de 'esbravejou', serve para:", r: "Separar a fala do personagem do comentário feito pelo narrador do texto.", erradas: ["Substituir o uso de uma vírgula errada que o autor tinha posto.", "Mostrar que o menino repetiu a pergunta várias vezes sem parar.", "Terminar de vez a história de forma dramática no cinema escuro."] },
+    { p: "[D14] 'Foi ao mercado e comprou pão, feijão, arroz e carne.' A vírgula é usada nessa frase com a função exclusiva de:", r: "Separar os elementos sucessivos listados em uma mesma frase.", erradas: ["Apontar que o mercado fechou antes de comprar o arroz.", "Criar suspense para revelar a carne no final da história assustadora.", "Demonstrar a raiva da pessoa por ter gastado muito dinheiro nas compras."] },
+    { p: "[D14] 'O avião rasgou as nuvens: chegou ao aeroporto de Congonhas.' O uso de dois pontos (:) neste caso anuncia:", r: "Uma consequência ou esclarecimento do fato dito antes.", erradas: ["O início obrigatório da fala do piloto da aeronave.", "Que o avião sofreu um grande acidente nas nuvens altas.", "Uma pergunta feita pelos passageiros de dentro da nave."] },
+    { p: "[D14] 'Pelé (nascido em Três Corações) fez o milésimo gol no Maracanã.' Os parênteses isolam uma informação que é:", r: "Acessória, que acrescenta detalhes sobre onde Pelé nasceu sem quebrar a frase.", erradas: ["A mais importante do texto, que devia ser gritada em voz alta.", "Um erro de ortografia que a professora mandou o aluno corrigir em casa.", "Uma ironia para dizer que Pelé não nasceu de verdade lá."] },
+    { p: "[D14] 'Socorro! Tem uma barata gigante no banheiro!' O ponto de exclamação é utilizado para reforçar a ideia de:", r: "Pânico, terror, um forte pedido de ajuda do personagem.", erradas: ["Uma pergunta educada e calma para tentar afastar o inseto do cômodo.", "Felicidade e comemoração por encontrar um novo animal de estimação ali.", "Dúvida sobre a espécie do animal antes de ligar para o biólogo do zoológico."] },
+    { p: "[D14] 'Dizem que o 'mouse' do computador do laboratório não funciona mais.' As aspas na palavra 'mouse' têm a finalidade de:", r: "Destacar que a palavra está num sentido figurado (rato, parte do PC).", erradas: ["Provar que havia um roedor de verdade comendo os fios da escola.", "Ironizar o tamanho muito grande do aparelho eletrônico de informática.", "Citar as famosas palavras de um inventor rico de tecnologia da época."] }
+];
+
+let questoesNaoUsadas = [...questoes]; 
+let faseQuizAtual = 0; let acertosQuiz = 0; let quizEmAndamento = false;
+
+function iniciarQuizUI() {
+    quizEmAndamento = true; faseQuizAtual = 0; acertosQuiz = 0;
+    document.getElementById('quiz-ui').style.display = 'flex';
+    document.getElementById('quiz-message').style.color = '#f0f';
+    document.getElementById('quiz-message').innerText = "Recarga Neural. Responda a 5 questões para restabelecer munição.";
+    if (jogoAtual) jogoAtual.physics.pause();
+    
+    // Reseta inputs ao abrir o quiz para não ficarem travados
+    if (jogoAtual) {
+        jogoAtual.atirando = false; 
+        jogoAtual.btnTiro.setAlpha(0.4);
+        jogoAtual.joystickAtivo = false;
+        jogoAtual.joyVelX = 0;
+        jogoAtual.joyVelY = 0;
+        if(jogoAtual.joyThumb) {
+            jogoAtual.joyBaseX = 120;
+            jogoAtual.joyBaseY = 525;
+            jogoAtual.joyBase.setPosition(jogoAtual.joyBaseX, jogoAtual.joyBaseY);
+            jogoAtual.joyThumb.setPosition(jogoAtual.joyBaseX, jogoAtual.joyBaseY);
+            jogoAtual.joyThumb.setAlpha(0.6);
+            jogoAtual.joyBase.setAlpha(0.2);
+        }
+        jogoAtual.pointerJoystick = null;
+        jogoAtual.pointerFire = null;
+    }
+    
+    carregarPergunta();
+}
+
+function carregarPergunta() {
+    if (faseQuizAtual >= 5) { finalizarQuiz(); return; }
+    if (questoesNaoUsadas.length === 0) questoesNaoUsadas = [...questoes]; // Refill
+
+    let indexAleatorio = Math.floor(Math.random() * questoesNaoUsadas.length);
+    const q = questoesNaoUsadas.splice(indexAleatorio, 1)[0]; 
+    
+    document.getElementById('question-text').innerText = `Questão ${faseQuizAtual + 1}/5:\n\n${q.p}`;
+    
+    let opcoes = [q.r, ...q.erradas];
+    for (let i = opcoes.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [opcoes[i], opcoes[j]] = [opcoes[j], opcoes[i]];
+    }
+
+    const container = document.getElementById('answers-container');
+    container.innerHTML = '';
+    opcoes.forEach(opcao => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn'; btn.innerText = opcao;
+        btn.onclick = () => verificarResposta(opcao === q.r, btn, opcoes.indexOf(q.r));
+        container.appendChild(btn);
+    });
+}
+
+function verificarResposta(estaCorreta, btnClicado, indexCorreta) {
+    const botoes = document.querySelectorAll('.answer-btn');
+    botoes.forEach(b => b.disabled = true);
+    faseQuizAtual++;
+    if (estaCorreta) {
+        acertosQuiz++; btnClicado.style.backgroundColor = '#0f0'; btnClicado.style.color = '#000'; sfx.power();
+    } else {
+        btnClicado.style.backgroundColor = '#f00'; btnClicado.style.color = '#fff';
+        botoes[indexCorreta].style.backgroundColor = '#0f0'; botoes[indexCorreta].style.color = '#000'; sfx.error(); 
+    }
+    setTimeout(carregarPergunta, 1500);
+}
+
+function finalizarQuiz() {
+    const ganhoMunicao = acertosQuiz * 20; let comboAtivado = false;
+    
+    if (jogoAtual) {
+        jogoAtual.municao = Math.min(100, jogoAtual.municao + ganhoMunicao);
+        if (ganhoMunicao === 0) jogoAtual.municao += 10; 
+        if (acertosQuiz === 5) {
+            jogoAtual.pontuacao *= 2; jogoAtual.txtScore.setText('PTS: ' + jogoAtual.pontuacao); comboAtivado = true;
+            jogoAtual.tweens.add({ targets: jogoAtual.txtScore, scaleX: 1.5, scaleY: 1.5, yoyo: true, duration: 300, repeat: 3 });
+        }
+    }
+    document.getElementById('question-text').innerText = "Sistemas restaurados...\nA nave está pronta para voltar ao combate.";
+    document.getElementById('answers-container').innerHTML = '';
+    let mensagemFinal = `Você acertou ${acertosQuiz}/5 e recarregou ${ganhoMunicao > 0 ? ganhoMunicao : 10} unidades!`;
+    if (comboAtivado) {
+        mensagemFinal += "\n\n🔥 COMBO PERFEITO! A SUA PONTUAÇÃO FOI DUPLICADA! 🔥";
+        document.getElementById('quiz-message').style.color = '#ffaa00'; 
+    }
+    document.getElementById('quiz-message').innerText = mensagemFinal;
+    const btnVoltar = document.createElement('button');
+    btnVoltar.className = 'answer-btn'; btnVoltar.innerText = "VOLTAR PARA A BATALHA"; btnVoltar.style.textAlign = "center";
+    if(comboAtivado) { btnVoltar.style.borderColor = "#ffaa00"; btnVoltar.style.color = "#ffaa00"; }
+    btnVoltar.onclick = () => {
+        document.getElementById('quiz-ui').style.display = 'none'; quizEmAndamento = false;
+        if (jogoAtual) jogoAtual.retomarJogo();
+    };
+    document.getElementById('answers-container').appendChild(btnVoltar);
+}
+
+
+// ==========================================
+// 2. MOTOR DO JOGO (PHASER 3) COM RENDERIZAÇÃO LOCAL SEGURA E JOYSTICK NOVO
+// ==========================================
+let phaserGame;
+let jogoAtual; 
+
+function iniciarJogo() {
+    document.getElementById('start-ui').style.display = 'none';
+    initAudio(); 
+    const config = {
+        type: Phaser.CANVAS, // Garante que as imagens locais carregam sem bloqueios do WebGL
+        parent: 'game-container',
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 800, height: 600 },
+        physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
+        input: { activePointers: 3 }, scene: MainScene
+    };
+    phaserGame = new Phaser.Game(config);
+}
+
+class MainScene extends Phaser.Scene {
+    constructor() { super({ key: 'MainScene' }); }
+
+    preload() {
+        let gfx = this.make.graphics({ x: 0, y: 0, add: false });
+        gfx.fillStyle(0x00ffff, 1); gfx.fillRect(0, 0, 6, 25); gfx.generateTexture('tiroPlayer', 6, 25); gfx.clear();
+        gfx.fillStyle(0xff00ff, 1); gfx.fillCircle(6, 6, 6); gfx.generateTexture('tiroInimigo', 12, 12); gfx.clear();
+        gfx.fillStyle(0xffaa00, 1); gfx.fillCircle(4, 4, 4); gfx.generateTexture('particula', 8, 8); gfx.clear();
+        
+        gfx.fillStyle(0x00ff00, 1); gfx.fillRect(0, 0, 30, 30); gfx.fillStyle(0xffffff, 1); gfx.fillRect(12, 5, 6, 20); gfx.fillRect(5, 12, 20, 6); gfx.generateTexture('puSpread', 30, 30); gfx.clear();
+        gfx.fillStyle(0xffff00, 1); gfx.fillRect(0, 0, 30, 30); gfx.fillStyle(0xff0000, 1); gfx.fillRect(8, 5, 4, 20); gfx.fillRect(18, 5, 4, 20); gfx.generateTexture('puRapid', 30, 30); gfx.clear();
+        
+        gfx.fillStyle(0xffffff, 1); gfx.fillRect(0, 0, 30, 30);
+        gfx.fillStyle(0xff0000, 1); gfx.fillRect(12, 5, 6, 20); gfx.fillRect(5, 12, 20, 6);
+        gfx.generateTexture('puHeal', 30, 30); gfx.clear();
+
+        gfx.fillStyle(0x0000ff, 1); gfx.fillRect(0, 0, 30, 30);
+        gfx.lineStyle(3, 0xffffff, 1); gfx.strokeCircle(15, 15, 10);
+        gfx.generateTexture('puShield', 30, 30); gfx.clear();
+
+        gfx.fillStyle(0x00ffff, 1); gfx.fillRect(0, 0, 30, 30);
+        gfx.lineStyle(3, 0xffffff, 1); gfx.beginPath(); gfx.arc(15, 15, 8, Math.PI * 0.25, Math.PI * 1.75, false); gfx.strokePath();
+        gfx.generateTexture('puClone', 30, 30); gfx.clear();
+
+        gfx.lineStyle(4, 0x00ffff, 0.8); gfx.fillStyle(0x0000ff, 0.3); gfx.fillCircle(40, 40, 35); gfx.strokeCircle(40, 40, 35);
+        gfx.generateTexture('shieldAura', 80, 80); gfx.clear();
+
+        gfx.lineStyle(3, 0x00ffff, 1); gfx.fillStyle(0x050510, 1); gfx.beginPath(); gfx.moveTo(35,0); gfx.lineTo(70,70); gfx.lineTo(35,55); gfx.lineTo(0,70); gfx.closePath(); gfx.fillPath(); gfx.strokePath(); gfx.generateTexture('fbNave', 70, 70); gfx.clear();
+        gfx.fillStyle(0x0f0, 1); gfx.fillCircle(35,35,30); gfx.generateTexture('fbE1', 70, 70); gfx.clear();
+        gfx.fillStyle(0x00f, 1); gfx.fillCircle(35,35,30); gfx.generateTexture('fbE2', 70, 70); gfx.clear();
+        gfx.fillStyle(0xf0f, 1); gfx.fillCircle(35,35,30); gfx.generateTexture('fbE3', 70, 70); gfx.clear();
+        gfx.fillStyle(0xaa0000, 1); gfx.fillRect(0,0,150,150); gfx.generateTexture('fbBoss1', 150, 150); gfx.clear();
+        gfx.fillStyle(0x00aa00, 1); gfx.fillRect(0,0,150,150); gfx.generateTexture('fbBoss2', 150, 150); gfx.clear();
+        gfx.fillStyle(0x0000aa, 1); gfx.fillRect(0,0,150,150); gfx.generateTexture('fbBoss3', 150, 150); gfx.clear();
+    }
+
+    create() {
+        jogoAtual = this; 
+
+        // Extrai imagens da página de forma segura
+        const addTex = (id, key, fbKey) => {
+            let img = document.getElementById(id);
+            if (img && img.complete && img.naturalWidth > 0) {
+                try {
+                    if (!this.textures.exists(key)) this.textures.addImage(key, img);
+                    return key;
+                } catch(e) { return fbKey; }
+            }
+            return fbKey;
+        };
+
+        this.keyNave = addTex('imgNave', 'txNave', 'fbNave');
+        this.keyE1 = addTex('imgFormiga', 'txFormiga', 'fbE1');
+        this.keyE2 = addTex('imgAranha', 'txAranha', 'fbE2');
+        this.keyE3 = addTex('imgEscorpiao', 'txEscorpiao', 'fbE3');
+        this.keyBoss1 = addTex('imgBoss1', 'txBoss1', 'fbBoss1');
+        this.keyBoss2 = addTex('imgBoss2', 'txBoss2', 'fbBoss2');
+        this.keyBoss3 = addTex('imgBoss3', 'txBoss3', 'fbBoss3');
+
+        // Cria o painel inferior para os controlos (Fora da área do jogo)
+        this.add.rectangle(400, 525, 800, 150, 0x050510).setDepth(90);
+        this.add.rectangle(400, 450, 800, 4, 0x00ffff).setDepth(90);
+
+        this.estrelas = this.add.group();
+        for (let i = 0; i < 100; i++) {
+            let estrela = this.add.circle(Phaser.Math.Between(0, 800), Phaser.Math.Between(0, 450), Math.random() * 2, 0x00ffff);
+            estrela.velocidade = Math.random() * 3 + 1; this.estrelas.add(estrela);
+        }
+
+        this.emissorExplosao = this.add.particles(0, 0, 'particula', { emitting: false, speed: { min: 50, max: 200 }, scale: { start: 1, end: 0 }, lifespan: 500, blendMode: 'ADD' });
+
+        this.grupoTirosPlayer = this.physics.add.group();
+        this.grupoTirosInimigos = this.physics.add.group();
+        this.grupoInimigos = this.physics.add.group();
+        this.bossGroup = this.physics.add.group();
+        this.grupoPowerUps = this.physics.add.group(); 
+
+        // Jogador nasce num pouco mais acima para não sobrepor o painel
+        this.player = this.physics.add.sprite(400, 380, this.keyNave);
+        this.player.setDisplaySize(70, 70); this.player.body.setSize(this.player.width * 0.5, this.player.height * 0.7); this.player.setCollideWorldBounds(false); 
+
+        // Sistemas do Jogador
+        this.pontuacao = 0; this.municao = 50; this.saude = 100; this.nivel = 1; this.metaPontosFase = 500; this.ultimoTiro = 0;
+        this.isBossFight = false; this.bossHP = 0; this.tipoArma = 'normal'; this.timerArma = null;
+        
+        // Novos Sistemas
+        this.isImmune = false;
+        this.hasShield = false;
+        this.shieldAura = this.add.sprite(0, 0, 'shieldAura');
+        this.shieldAura.setVisible(false);
+        this.shieldAura.setDepth(50);
+        
+        this.cloneAtivo = false;
+        this.cloneShip = this.add.sprite(0, 0, this.keyNave);
+        this.cloneShip.setDisplaySize(50, 50); 
+        this.cloneShip.setTint(0x00ffff);
+        this.cloneShip.setAlpha(0.7);
+        this.cloneShip.setVisible(false);
+
+        // Textos agora ficam organizados no painel inferior
+        const estiloTextoCentro = { font: 'bold 18px Arial', fill: '#0ff', align: 'center' };
+        this.txtScore = this.add.text(400, 475, 'PTS: 0', estiloTextoCentro).setOrigin(0.5).setDepth(101);
+        this.txtNivel = this.add.text(400, 505, 'NÍVEL: 1', estiloTextoCentro).setOrigin(0.5).setDepth(101);
+        this.txtMunicao = this.add.text(400, 535, 'MUN: 50', { font: 'bold 18px Arial', fill: '#f0f', align: 'center' }).setOrigin(0.5).setDepth(101);
+        this.txtSaude = this.add.text(400, 565, 'HP: 100%', { font: 'bold 18px Arial', fill: '#0f0', align: 'center' }).setOrigin(0.5).setDepth(101);
+        
+        this.uiBoss = this.add.text(400, 30, 'CHEFÃO', { font: 'bold 20px Arial', fill: '#f00' }).setOrigin(0.5); this.uiBoss.setVisible(false);
+
+        this.physics.add.overlap(this.grupoTirosPlayer, this.grupoInimigos, this.acertouInimigo, null, this);
+        this.physics.add.overlap(this.grupoTirosPlayer, this.bossGroup, this.hitBoss, null, this);
+        this.physics.add.overlap(this.grupoTirosInimigos, this.player, this.levouTiro, null, this);
+        this.physics.add.overlap(this.grupoInimigos, this.player, this.bateuInimigo, null, this);
+        this.physics.add.overlap(this.bossGroup, this.player, this.bateuInimigo, null, this);
+        this.physics.add.overlap(this.player, this.grupoPowerUps, this.coletarPowerUp, null, this);
+
+        this.time.addEvent({ delay: 1500, callback: this.gerarInimigos, callbackScope: this, loop: true });
+
+        // ==========================================
+        // UI MÓVEL: JOYSTICK E BOTÃO DE TIRO NO PAINEL DEDICADO
+        // ==========================================
+        this.joyBaseX = 120;
+        this.joyBaseY = 525; 
+        
+        this.joyBase = this.add.circle(this.joyBaseX, this.joyBaseY, 60, 0x00ffff, 0.2).setScrollFactor(0).setDepth(100);
+        this.joyThumb = this.add.circle(this.joyBaseX, this.joyBaseY, 30, 0x00ffff, 0.6).setScrollFactor(0).setDepth(101);
+
+        this.btnTiro = this.add.circle(680, 525, 50, 0xff00ff, 0.4).setScrollFactor(0).setDepth(100); 
+        this.txtTiro = this.add.text(680, 525, 'FOGO', { font: 'bold 20px Arial', fill: '#fff' }).setOrigin(0.5).setDepth(101);
+
+        this.joystickAtivo = false;
+        this.pointerJoystick = null;
+        this.pointerFire = null;
+        this.joyVelX = 0;
+        this.joyVelY = 0;
+        this.atirando = false;
+
+        // O joystick adapta-se ao clique, desde que seja tocado na zona do painel de controlo!
+        this.input.on('pointerdown', (pointer) => {
+            let distTiro = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.btnTiro.x, this.btnTiro.y);
+            
+            if (distTiro < 70) { 
+                this.atirando = true; 
+                this.btnTiro.setAlpha(0.8);
+                this.pointerFire = pointer;
+            } 
+            else if (pointer.x < 400 && pointer.y > 450 && !this.joystickAtivo) {
+                this.joystickAtivo = true;
+                this.pointerJoystick = pointer;
+                
+                this.joyBaseX = pointer.x;
+                this.joyBaseY = pointer.y;
+                this.joyBase.setPosition(this.joyBaseX, this.joyBaseY);
+                this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
+                
+                this.joyThumb.setAlpha(1);
+                this.joyBase.setAlpha(0.5);
+            }
+        });
+
+        this.input.on('pointermove', (pointer) => {
+            if (this.joystickAtivo && pointer === this.pointerJoystick && !quizEmAndamento && this.saude > 0) {
+                let dist = Phaser.Math.Distance.Between(this.joyBaseX, this.joyBaseY, pointer.x, pointer.y);
+                let angle = Phaser.Math.Angle.Between(this.joyBaseX, this.joyBaseY, pointer.x, pointer.y);
+                
+                if (dist > 60) dist = 60;
+                
+                this.joyThumb.x = this.joyBaseX + Math.cos(angle) * dist;
+                this.joyThumb.y = this.joyBaseY + Math.sin(angle) * dist;
+
+                let velocidadeMaxima = 450; 
+                this.joyVelX = Math.cos(angle) * (dist / 60) * velocidadeMaxima;
+                this.joyVelY = Math.sin(angle) * (dist / 60) * velocidadeMaxima;
+            }
+        });
+
+        this.input.on('pointerup', (pointer) => { 
+            if (pointer === this.pointerJoystick) {
+                this.joystickAtivo = false;
+                this.pointerJoystick = null;
+                
+                this.joyBaseX = 120;
+                this.joyBaseY = 525;
+                this.joyBase.setPosition(this.joyBaseX, this.joyBaseY);
+                this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
+                
+                this.joyThumb.setAlpha(0.6);
+                this.joyBase.setAlpha(0.2);
+                this.joyVelX = 0;
+                this.joyVelY = 0;
+            }
+            if (pointer === this.pointerFire) {
+                this.atirando = false; 
+                this.btnTiro.setAlpha(0.4); 
+                this.pointerFire = null;
+            }
+        });
+        
+        this.input.on('gameout', () => {
+            this.atirando = false;
+            this.btnTiro.setAlpha(0.4);
+            this.joystickAtivo = false;
+            this.joyVelX = 0;
+            this.joyVelY = 0;
+            this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
+        });
+        
+        this.teclas = this.input.keyboard.createCursorKeys();
+    }
+
+    update(tempo) {
+        if (quizEmAndamento || this.saude <= 0) { this.player.setVelocity(0); return; }
+
+        if (this.cloneAtivo) {
+            this.cloneShip.x = this.player.x - 60; 
+            this.cloneShip.y = this.player.y + 20;
+        }
+        if (this.hasShield) {
+            this.shieldAura.x = this.player.x;
+            this.shieldAura.y = this.player.y;
+        }
+
+        this.estrelas.children.iterate((estrela) => {
+            estrela.y += estrela.velocidade + (this.nivel * 0.5) + (this.isBossFight ? 5 : 0);
+            if (estrela.y > 450) { estrela.y = 0; estrela.x = Phaser.Math.Between(0, 800); }
+        });
+        
+        let velX = 0;
+        let velY = 0;
+
+        if (this.joystickAtivo) {
+            velX = this.joyVelX;
+            velY = this.joyVelY;
+        } else {
+            if (this.teclas.left.isDown) velX = -450; else if (this.teclas.right.isDown) velX = 450;
+            if (this.teclas.up.isDown) velY = -450; else if (this.teclas.down.isDown) velY = 450;
+        }
+
+        this.player.setVelocity(velX, velY);
+
+        // Mantém a nave na área da tela de jogo e fora do painel de controlo
+        this.player.x = Phaser.Math.Clamp(this.player.x, 35, 765); 
+        this.player.y = Phaser.Math.Clamp(this.player.y, 35, 415); // O painel começa no 450
+
+        let delayTiro = this.tipoArma === 'rapid' ? 100 : 200;
+        if ((this.atirando || this.teclas.space.isDown) && tempo > this.ultimoTiro) { this.atirar(); this.ultimoTiro = tempo + delayTiro; }
+
+        this.grupoTirosPlayer.children.each(b => { if (b.active && b.y < -50) b.destroy(); });
+        this.grupoTirosInimigos.children.each(b => { if (b.active && b.y > 500) b.destroy(); });
+        this.grupoPowerUps.children.each(p => { if (p.active && p.y > 500) p.destroy(); });
+        
+        this.grupoInimigos.children.each(e => { 
+            if (e.active && e.y > 500) e.destroy(); 
+            if (e.active && e.podeAtirar && Math.random() < 0.015 * this.nivel) {
+                let tiro = this.grupoTirosInimigos.create(e.x, e.y + 30, 'tiroInimigo'); tiro.setVelocityY(300 + (this.nivel * 20)); sfx.enemyShoot(); 
+            }
+        });
+
+        if (this.isBossFight && this.boss && this.boss.active) {
+            this.uiBoss.setText('CHEFÃO: ' + this.bossHP);
+            let speedMod = this.boss.tipoBoss === 1 ? 300 : 200; 
+            if(this.boss.x < 100) this.boss.setVelocityX(speedMod + (this.nivel * 20)); else if (this.boss.x > 700) this.boss.setVelocityX(-(speedMod + (this.nivel * 20)));
+
+            if (tempo > this.boss.ultimoTiroBoss) {
+                sfx.enemyShoot();
+                if (this.boss.tipoBoss === 0) {
+                    for(let i=-1; i<=1; i++) { let b = this.grupoTirosInimigos.create(this.boss.x, this.boss.y+75, 'tiroInimigo'); b.setVelocity(i*150, 300); }
+                    this.boss.ultimoTiroBoss = tempo + 1200;
+                } else if (this.boss.tipoBoss === 1) {
+                    let b = this.grupoTirosInimigos.create(this.boss.x, this.boss.y+75, 'tiroInimigo'); b.setVelocity(0, 450); this.boss.ultimoTiroBoss = tempo + 400;
+                } else if (this.boss.tipoBoss === 2) {
+                    for(let i=-2; i<=2; i++) { let b = this.grupoTirosInimigos.create(this.boss.x, this.boss.y+75, 'tiroInimigo'); b.setVelocity(i*120, 250); }
+                    this.boss.ultimoTiroBoss = tempo + 1500;
+                }
+            }
+        }
+
+        this.txtMunicao.setText('MUN: ' + this.municao); this.txtSaude.setText('HP: ' + this.saude + '%');
+        this.txtSaude.setFill(this.saude <= 30 ? '#f00' : '#0f0');
+        if(this.tipoArma === 'spread') this.txtMunicao.setFill('#00ff00'); else if(this.tipoArma === 'rapid') this.txtMunicao.setFill('#ffff00'); else this.txtMunicao.setFill('#f0f');
+    }
+
+    atirar() {
+        if (this.municao <= 0) { this.atirando = false; this.btnTiro.setAlpha(0.4); iniciarQuizUI(); return; }
+        this.municao--; sfx.shoot(); 
+        
+        // Tiros da Nave Principal
+        if (this.tipoArma === 'spread') {
+            let t1 = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); t1.setVelocityY(-700);
+            let t2 = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); t2.setVelocity(-150, -700); t2.setAngle(-15);
+            let t3 = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); t3.setVelocity(150, -700); t3.setAngle(15);
+        } else {
+            let tiro = this.grupoTirosPlayer.create(this.player.x, this.player.y - 40, 'tiroPlayer'); tiro.setVelocityY(-700);
+        }
+
+        // Tiros do Clone (se ativo)
+        if (this.cloneAtivo) {
+            let tiroClone = this.grupoTirosPlayer.create(this.cloneShip.x, this.cloneShip.y - 30, 'tiroPlayer');
+            tiroClone.setVelocityY(-700);
+        }
+    }
+
+    gerarInimigos() {
+        if (quizEmAndamento || this.saude <= 0) return;
+
+        if (!this.isBossFight && this.pontuacao >= this.metaPontosFase) { 
+            this.isBossFight = true; 
+            let indiceChefe = (this.nivel - 1) % 3; 
+            let arrayChaves = [this.keyBoss1, this.keyBoss2, this.keyBoss3];
+            this.bossHP = 300 * this.nivel;
+            this.boss = this.bossGroup.create(400, -100, arrayChaves[indiceChefe]); 
+            this.boss.setDisplaySize(150, 150); this.boss.body.setSize(this.boss.width * 0.7, this.boss.height * 0.7);
+            this.boss.tipoBoss = indiceChefe; this.boss.ultimoTiroBoss = 0; this.boss.setVelocityY(50);
+            setTimeout(() => { if(this.boss && this.boss.active) { this.boss.setVelocityY(0); this.boss.setVelocityX(200 + (this.nivel * 20)); this.uiBoss.setVisible(true); } }, 3000);
+            return; 
+        }
+        
+        if(this.isBossFight) return; 
+
+        let quantidade = Math.min(4, 1 + Math.floor(this.nivel / 3));
+        for (let i = 0; i < quantidade; i++) {
+            let sorteio = Math.random(); let imgChave = this.keyE1; let pontos = 5; let podeAtirar = false; let multiVelocidade = 1.0;
+            if (sorteio >= 0.4 && sorteio < 0.75) { imgChave = this.keyE2; pontos = 10; podeAtirar = true; multiVelocidade = 1.2; } 
+            else if (sorteio >= 0.75) { imgChave = this.keyE3; pontos = 20; podeAtirar = true; multiVelocidade = 1.5; }
+
+            let inimigo = this.grupoInimigos.create(Phaser.Math.Between(50, 750), Phaser.Math.Between(-150, -50), imgChave);
+            if (imgChave === 'txAranha' || imgChave === 'txEscorpiao' || imgChave === 'fbE2' || imgChave === 'fbE3') {
+                inimigo.setAngle(90); inimigo.setDisplaySize(70, 70); inimigo.body.setSize(inimigo.width * 0.6, inimigo.height * 0.6);
+            } else { inimigo.setDisplaySize(65, 65); inimigo.body.setSize(inimigo.width * 0.7, inimigo.height * 0.7); }
+            inimigo.setVelocityY((120 + (this.nivel * 20)) * multiVelocidade); inimigo.pontos = pontos; inimigo.podeAtirar = podeAtirar;
+        }
+    }
+
+    acertouInimigo(tiro, inimigo) {
+        tiro.destroy(); this.emissorExplosao.emitParticleAt(inimigo.x, inimigo.y, 15); sfx.expl(); 
+        this.pontuacao += inimigo.pontos; this.txtScore.setText('PTS: ' + this.pontuacao);
+        
+        if (Math.random() < 0.15) {
+            let tipos = ['spread', 'rapid', 'heal', 'shield', 'clone'];
+            let tipoPU = tipos[Math.floor(Math.random() * tipos.length)];
+            
+            let spritePU = 'puSpread';
+            if (tipoPU === 'rapid') spritePU = 'puRapid';
+            else if (tipoPU === 'heal') spritePU = 'puHeal';
+            else if (tipoPU === 'shield') spritePU = 'puShield';
+            else if (tipoPU === 'clone') spritePU = 'puClone';
+            
+            let powerUp = this.grupoPowerUps.create(inimigo.x, inimigo.y, spritePU); 
+            powerUp.tipo = tipoPU; 
+            powerUp.setVelocityY(100);
+        }
+        inimigo.destroy();
+    }
+
+    coletarPowerUp(player, powerUp) {
+        let tipo = powerUp.tipo; 
+        sfx.power(); 
+        let txtF = this.add.text(player.x, player.y - 30, tipo.toUpperCase() + '!', { font: 'bold 18px Arial', fill: '#fff' }).setOrigin(0.5);
+        this.tweens.add({ targets: txtF, y: txtF.y - 50, alpha: 0, duration: 1200, onComplete: () => txtF.destroy() });
+        
+        if (tipo === 'heal') {
+            this.saude = Math.min(100, this.saude + 25);
+        } 
+        else if (tipo === 'shield') {
+            this.hasShield = true;
+            this.shieldAura.setVisible(true);
+            if (this.timerShield) this.timerShield.remove();
+            this.timerShield = this.time.delayedCall(30000, () => {
+                this.hasShield = false;
+                this.shieldAura.setVisible(false);
+            }, [], this);
+        }
+        else if (tipo === 'clone') {
+            this.cloneAtivo = true;
+            this.cloneShip.setVisible(true);
+            if (this.timerClone) this.timerClone.remove();
+            this.timerClone = this.time.delayedCall(20000, () => {
+                this.cloneAtivo = false;
+                this.cloneShip.setVisible(false);
+            }, [], this);
+        }
+        else {
+            this.tipoArma = tipo;
+            if (this.timerArma) this.timerArma.remove();
+            this.timerArma = this.time.delayedCall(10000, () => { this.tipoArma = 'normal'; }, [], this);
+        }
+        
+        powerUp.destroy();
+    }
+
+    hitBoss(bullet, bossObj) {
+        bullet.destroy(); this.bossHP -= 10;
+        bossObj.setTintFill(0xffffff); setTimeout(() => { if(bossObj && bossObj.active) bossObj.clearTint(); }, 100); sfx.expl(); 
+        if (this.bossHP <= 0) {
+            this.pontuacao += 1000; this.txtScore.setText('PTS: ' + this.pontuacao);
+            this.emissorExplosao.emitParticleAt(bossObj.x, bossObj.y, 50); bossObj.destroy(); this.uiBoss.setVisible(false); this.isBossFight = false;
+            this.nivel++; this.txtNivel.setText('NÍVEL: ' + this.nivel); this.metaPontosFase = this.pontuacao + (500 * this.nivel);
+            this.saude = Math.min(100, this.saude + 20); this.municao += 20;
+            mostrarAlerta("FASE " + (this.nivel - 1) + " CONCLUÍDA! Bônus de Vida e Munição!");
+        }
+    }
+
+    levarDano(valor) {
+        if (this.isImmune || this.hasShield) return;
+
+        this.saude -= valor; this.player.setTintFill(0xff0000); sfx.expl(); 
+        setTimeout(() => { if (this.player) this.player.clearTint(); }, 150);
+        if (this.saude <= 0) {
+            this.saude = 0; this.physics.pause();
+            this.add.text(400, 300, 'FIM DE JOGO\nToque para tentar de novo', { font: 'bold 24px Arial', fill: '#f00', align: 'center', backgroundColor: '#000', padding: 15 }).setOrigin(0.5);
+            this.input.once('pointerdown', () => location.reload());
+        }
+    }
+
+    levouTiro(jogador, tiroInimigo) { 
+        tiroInimigo.destroy(); 
+        this.levarDano(10); 
+    }
+    
+    bateuInimigo(jogador, inimigo) { 
+        this.emissorExplosao.emitParticleAt(inimigo.x, inimigo.y, 15); 
+        inimigo.destroy(); 
+        this.levarDano(25); 
+    }
+
+    retomarJogo() {
+        this.physics.resume(); 
+        
+        this.isImmune = true;
+        this.tweens.add({
+            targets: this.player,
+            alpha: { from: 1, to: 0.2 },
+            ease: 'Linear',
+            duration: 500,
+            repeat: 9, 
+            yoyo: true,
+            onComplete: () => {
+                this.isImmune = false;
+                if(this.player) this.player.setAlpha(1);
+            }
+        });
+
+        this.atirando = false; this.btnTiro.setAlpha(0.4);
+        
+        this.joystickAtivo = false;
+        this.joyVelX = 0;
+        this.joyVelY = 0;
+        if(this.joyThumb) {
+            this.joyBaseX = 120;
+            this.joyBaseY = 525;
+            this.joyBase.setPosition(this.joyBaseX, this.joyBaseY);
+            this.joyThumb.setPosition(this.joyBaseX, this.joyBaseY);
+            this.joyThumb.setAlpha(0.6);
+            this.joyBase.setAlpha(0.2);
+        }
+        this.ponteiroJoystick = null;
+    }
+}
+</script>
+</body>
+</html>
